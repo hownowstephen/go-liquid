@@ -17,50 +17,76 @@ func checkTemplate(t *testing.T, tpl string, want []node) {
 
 func TestBlankSpace(t *testing.T) {
 	checkTemplate(t, "  ", []node{
-		{"  "},
+		{value: "  "},
 	})
 }
 
 func TestVariableBeginning(t *testing.T) {
-	checkTemplate(t, "{{funk}}  ", []node{})
+	checkTemplate(t, "{{funk}}  ", []node{
+		{value: "{{funk}}"},
+		{value: "  "},
+	})
+
+	//     assert_equal Variable, template.root.nodelist[0].class
+	//     assert_equal String, template.root.nodelist[1].class
 }
 
-//   def test_variable_beginning
-//     template = Liquid::Template.parse("{{funk}}  ")
-//     assert_equal 2, template.root.nodelist.size
-//     assert_equal Variable, template.root.nodelist[0].class
-//     assert_equal String, template.root.nodelist[1].class
-//   end
+func TestVariableEnd(t *testing.T) {
+	checkTemplate(t, "  {{funk}}", []node{
+		{value: "  "},
+		{value: "{{funk}}"},
+	})
 
-//   def test_variable_end
-//     template = Liquid::Template.parse("  {{funk}}")
-//     assert_equal 2, template.root.nodelist.size
-//     assert_equal String, template.root.nodelist[0].class
-//     assert_equal Variable, template.root.nodelist[1].class
-//   end
+	//     assert_equal String, template.root.nodelist[0].class
+	//     assert_equal Variable, template.root.nodelist[1].class
+}
 
-//   def test_variable_middle
-//     template = Liquid::Template.parse("  {{funk}}  ")
-//     assert_equal 3, template.root.nodelist.size
-//     assert_equal String, template.root.nodelist[0].class
-//     assert_equal Variable, template.root.nodelist[1].class
-//     assert_equal String, template.root.nodelist[2].class
-//   end
+func TestVariableMiddle(t *testing.T) {
+	checkTemplate(t, "  {{funk}}  ", []node{
+		{value: "  "},
+		{value: "{{funk}}"},
+		{value: "  "},
+	})
+	//     assert_equal String, template.root.nodelist[0].class
+	//     assert_equal Variable, template.root.nodelist[1].class
+	//     assert_equal String, template.root.nodelist[2].class
+}
 
-//   def test_variable_many_embedded_fragments
-//     template = Liquid::Template.parse("  {{funk}} {{so}} {{brother}} ")
-//     assert_equal 7, template.root.nodelist.size
-//     assert_equal [String, Variable, String, Variable, String, Variable, String],
-//       block_types(template.root.nodelist)
-//   end
+func TestVariableManyEmbeddedFragments(t *testing.T) {
+	checkTemplate(t, "  {{funk}} {{so}} {{brother}} ", []node{
+		{value: "  "},
+		{value: "{{funk}}"},
+		{value: " "},
+		{value: "{{so}}"},
+		{value: " "},
+		{value: "{{brother}}"},
+		{value: " "},
+	})
+	//     assert_equal [String, Variable, String, Variable, String, Variable, String],
+	//       block_types(template.root.nodelist)
+}
 
-//   def test_with_block
-//     template = Liquid::Template.parse("  {% comment %} {% endcomment %} ")
-//     assert_equal [String, Comment, String], block_types(template.root.nodelist)
-//     assert_equal 3, template.root.nodelist.size
-//   end
+func TestWithBlock(t *testing.T) {
+	checkTemplate(t, `  {% comment %} {% endcomment %} `, []node{
+		{value: "  "},
+		{nodelist: []node{
+			{value: "{% comment %}"},
+			{value: " "},
+			{value: "{% endcomment %}"},
+		}},
+		{value: " "},
+	})
+}
 
-//   def test_with_custom_tag
-//     Liquid::Template.register_tag("testtag", Block)
-//     assert Liquid::Template.parse("{% testtag %} {% endtesttag %}")
-//   end
+func TestWithCustomTag(t *testing.T) {
+	RegisterTag("testtag", &commentTag{})
+	checkTemplate(t, `{% testtag %} {% endtesttag %}`, []node{
+		node{
+			nodelist: []node{
+				node{value: "{% testtag %}"},
+				node{value: " "},
+				node{value: "{% endtesttag %}"},
+			},
+		},
+	})
+}
