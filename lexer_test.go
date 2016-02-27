@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func checkTokens(t *testing.T, raw string, want []tk) {
+func checkLexerTokens(t *testing.T, raw string, want []tk) {
 	got, err := Lexer(raw)
 	if err != nil {
 		t.Error("Got an error", err)
@@ -17,7 +17,7 @@ func checkTokens(t *testing.T, raw string, want []tk) {
 }
 
 func TestStrings(t *testing.T) {
-	checkTokens(t, ` 'this is a test""' "wat 'lol'"`, []tk{
+	checkLexerTokens(t, ` 'this is a test""' "wat 'lol'"`, []tk{
 		{tSingleStringLiteral, `'this is a test""'`},
 		{tDoubleStringLiteral, `"wat 'lol'"`},
 		EndOfString,
@@ -25,7 +25,7 @@ func TestStrings(t *testing.T) {
 }
 
 func TestInteger(t *testing.T) {
-	checkTokens(t, "hi 50", []tk{
+	checkLexerTokens(t, "hi 50", []tk{
 		{tIdentifier, "hi"},
 		{tNumberLiteral, "50"},
 		EndOfString,
@@ -33,7 +33,7 @@ func TestInteger(t *testing.T) {
 }
 
 func TestFloat(t *testing.T) {
-	checkTokens(t, "hi 5.0", []tk{
+	checkLexerTokens(t, "hi 5.0", []tk{
 		{tIdentifier, "hi"},
 		{tNumberLiteral, "5.0"},
 		EndOfString,
@@ -41,7 +41,7 @@ func TestFloat(t *testing.T) {
 }
 
 func TestComparison(t *testing.T) {
-	checkTokens(t, "== <> contains", []tk{
+	checkLexerTokens(t, "== <> contains", []tk{
 		{tComparisonOperator, "=="},
 		{tComparisonOperator, "<>"},
 		{tComparisonOperator, "contains"},
@@ -50,14 +50,14 @@ func TestComparison(t *testing.T) {
 }
 
 func TestSpecials(t *testing.T) {
-	checkTokens(t, "| .:", []tk{
+	checkLexerTokens(t, "| .:", []tk{
 		{tPipe, "|"},
 		{tDot, "."},
 		{tColon, ":"},
 		EndOfString,
 	})
 
-	checkTokens(t, "[,]", []tk{
+	checkLexerTokens(t, "[,]", []tk{
 		{tOpenSquare, "["},
 		{tComma, ","},
 		{tCloseSquare, "]"},
@@ -66,12 +66,12 @@ func TestSpecials(t *testing.T) {
 }
 
 func TestFancyIdentifiers(t *testing.T) {
-	checkTokens(t, "hi five?", []tk{
+	checkLexerTokens(t, "hi five?", []tk{
 		{tIdentifier, "hi"},
 		{tIdentifier, "five?"},
 		EndOfString,
 	})
-	checkTokens(t, "2foo", []tk{
+	checkLexerTokens(t, "2foo", []tk{
 		{tNumberLiteral, "2"},
 		{tIdentifier, "foo"},
 		EndOfString,
@@ -79,7 +79,7 @@ func TestFancyIdentifiers(t *testing.T) {
 }
 
 func TestWhitespace(t *testing.T) {
-	checkTokens(t, "five|\n\t ==", []tk{
+	checkLexerTokens(t, "five|\n\t ==", []tk{
 		{tIdentifier, "five"},
 		{tPipe, "|"},
 		{tComparisonOperator, "=="},
