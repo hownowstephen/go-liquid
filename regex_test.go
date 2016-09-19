@@ -17,41 +17,41 @@ func testRegex(t *testing.T, r *regexp.Regexp, raw string, want []string) {
 }
 
 func TestEmpty(t *testing.T) {
-	testRegex(t, QuotedFragment, ``, []string{})
+	testRegex(t, quotedFragmentRegexp, ``, []string{})
 }
 
 func TestQuote(t *testing.T) {
-	testRegex(t, QuotedFragment, `"arg 1"`, []string{`"arg 1"`})
+	testRegex(t, quotedFragmentRegexp, `"arg 1"`, []string{`"arg 1"`})
 }
 
 func TestWords(t *testing.T) {
-	testRegex(t, QuotedFragment, `arg1, arg2`, []string{`arg1`, `arg2`})
+	testRegex(t, quotedFragmentRegexp, `arg1, arg2`, []string{`arg1`, `arg2`})
 }
 
 func TestTags(t *testing.T) {
-	testRegex(t, QuotedFragment, `<tr> </tr>`, []string{`<tr>`, `</tr>`})
-	testRegex(t, QuotedFragment, `<tr></tr>`, []string{`<tr></tr>`})
-	testRegex(t, QuotedFragment, `<style class="hello">' </style>`, []string{`<style`, `class="hello">`, `</style>`})
+	testRegex(t, quotedFragmentRegexp, `<tr> </tr>`, []string{`<tr>`, `</tr>`})
+	testRegex(t, quotedFragmentRegexp, `<tr></tr>`, []string{`<tr></tr>`})
+	testRegex(t, quotedFragmentRegexp, `<style class="hello">' </style>`, []string{`<style`, `class="hello">`, `</style>`})
 
 }
 
 func TestDoubleQuotedWords(t *testing.T) {
-	testRegex(t, QuotedFragment, `'arg1 arg2 "arg 3"`, []string{`arg1`, `arg2`, `"arg 3"`})
+	testRegex(t, quotedFragmentRegexp, `'arg1 arg2 "arg 3"`, []string{`arg1`, `arg2`, `"arg 3"`})
 }
 
 func TestSingleQuotedWords(t *testing.T) {
-	testRegex(t, QuotedFragment, `arg1 arg2 'arg 3'`, []string{`arg1`, `arg2`, `'arg 3'`})
+	testRegex(t, quotedFragmentRegexp, `arg1 arg2 'arg 3'`, []string{`arg1`, `arg2`, `'arg 3'`})
 }
 
 func TestQuotedWordsInTheMiddle(t *testing.T) {
-	testRegex(t, QuotedFragment, `arg1 arg2 "arg 3" arg4   `, []string{`arg1`, `arg2`, `"arg 3"`, `arg4`})
+	testRegex(t, quotedFragmentRegexp, `arg1 arg2 "arg 3" arg4   `, []string{`arg1`, `arg2`, `"arg 3"`, `arg4`})
 }
 
-func TestVariableParser(t *testing.T) {
-	testRegex(t, VariableParser, `var`, []string{`var`})
-	testRegex(t, VariableParser, `var.method`, []string{`var`, `method`})
-	testRegex(t, VariableParser, `var[method]`, []string{`var`, `[method]`})
-	testRegex(t, VariableParser, `var[method][0]`, []string{`var`, `[method]`, `[0]`})
-	testRegex(t, VariableParser, `var["method"][0]`, []string{`var`, `["method"]`, `[0]`})
-	testRegex(t, VariableParser, `var[method][0].method`, []string{`var`, `[method]`, `[0]`, `method`})
+func TestvariableParserRegexp(t *testing.T) {
+	testRegex(t, variableParserRegexp, `var`, []string{`var`})
+	testRegex(t, variableParserRegexp, `var.method`, []string{`var`, `method`})
+	testRegex(t, variableParserRegexp, `var[method]`, []string{`var`, `[method]`})
+	testRegex(t, variableParserRegexp, `var[method][0]`, []string{`var`, `[method]`, `[0]`})
+	testRegex(t, variableParserRegexp, `var["method"][0]`, []string{`var`, `["method"]`, `[0]`})
+	testRegex(t, variableParserRegexp, `var[method][0].method`, []string{`var`, `[method]`, `[0]`, `method`})
 }

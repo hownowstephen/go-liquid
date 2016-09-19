@@ -2,7 +2,15 @@ package liquid
 
 // https://github.com/Shopify/liquid/blob/master/lib/liquid/parser.rb
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
+
+// Parser errors
+var (
+	ErrIndexOutOfBounds = errors.New("No tokens remaining")
+)
 
 // Parser objects parse the contents of liquid tags
 type Parser struct {
@@ -21,7 +29,7 @@ func NewParser(input string) (*Parser, error) {
 
 func (p *Parser) consume(tType string) (string, error) {
 	if int(p.index) >= len(p.tokens) {
-		return "", fmt.Errorf("Token out of bounds")
+		return "", ErrIndexOutOfBounds
 	}
 	token := p.tokens[p.index]
 	if tType != "" && token.name != tType {
@@ -30,13 +38,25 @@ func (p *Parser) consume(tType string) (string, error) {
 	p.index++
 
 	return token.value, nil
+}
 
+// analog to `consume?` in the ruby
+func (p *Parser) tryConsume(tType string) bool {
+	if int(p.index) >= len(p.tokens) {
+		return false
+	}
+	token := p.tokens[p.index]
+	if tType != "" && token.name != tType {
+		return false
+	}
+	p.index++
+	return true
 }
 
 func (p *Parser) jump(count uint64) error {
 	p.index += count
 	if int(p.index) >= len(p.tokens) {
-		return fmt.Errorf("Jumped out of bounds")
+		return ErrIndexOutOfBounds
 	}
 	return nil
 }
@@ -44,7 +64,7 @@ func (p *Parser) jump(count uint64) error {
 func (p *Parser) lookahead(tType string, offset uint64) (bool, error) {
 	index := p.index + offset
 	if int(index) >= len(p.tokens) {
-		return false, fmt.Errorf("Lookahead was out of bounds")
+		return false, ErrIndexOutOfBounds
 	}
 	token := p.tokens[index]
 	return token.name == tType, nil

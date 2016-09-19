@@ -27,7 +27,7 @@ func (t *Tokenizer) Next() (string, error) {
 
 // NewTokenizer creates a *Tokenizer instance specific to the supplied template
 func NewTokenizer(template string) *Tokenizer {
-	indices := TemplateParser.FindAllStringIndex(template, -1)
+	indices := templateParserRegexp.FindAllStringIndex(template, -1)
 
 	var tokens []string
 	var before int

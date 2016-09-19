@@ -7,14 +7,14 @@ import (
 )
 
 var (
-	FullToken         = regexp.MustCompile(fmt.Sprintf(`(?m)\A%v\s*(\w+)\s*(.*)?%v\z`, TagStart, TagEnd)) // om
-	ContentOfVariable = regexp.MustCompile(fmt.Sprintf(`(?m)\A%v(.*)%v\z`, VariableStart, VariableEnd))   // om
-	TokenIsBlank      = regexp.MustCompile(`\A\s*\z`)
+	fullTokenRegexp         = regexp.MustCompile(fmt.Sprintf(`(?m)\A%v\s*(\w+)\s*(.*)?%v\z`, tagStartRegexp, tagEndRegexp)) // om
+	contentOfVariableRegexp = regexp.MustCompile(fmt.Sprintf(`(?m)\A%v(.*)%v\z`, variableStartRegexp, variableEndRegexp))   // om
+	tokenIsBlankRegexp      = regexp.MustCompile(`\A\s*\z`)
 )
 
 const (
-	TagStartToken = "{%"
-	VarStartToken = "{{"
+	tagStartToken = "{%"
+	varStartToken = "{{"
 )
 
 type Template struct {
@@ -28,6 +28,10 @@ type node struct {
 
 func (n node) Blank() bool {
 	return false
+}
+
+func (n node) Render(vars Vars) (string, error) {
+	return n.value, nil
 }
 
 // Tag implements a parsing interface for generating liquid nodes
@@ -101,8 +105,8 @@ func consume(tokenizer *Tokenizer, ctx *parseContext) ([]node, error) {
 		}
 
 		switch {
-		case strings.HasPrefix(token, TagStartToken):
-			if matched := FullToken.FindStringSubmatch(token); len(matched) > 0 {
+		case strings.HasPrefix(token, tagStartToken):
+			if matched := fullTokenRegexp.FindStringSubmatch(token); len(matched) > 0 {
 				markup, tagName := matched[0], matched[1]
 				// Check for end tag
 				if strings.HasPrefix(tagName, "end") {
@@ -123,12 +127,12 @@ func consume(tokenizer *Tokenizer, ctx *parseContext) ([]node, error) {
 			} else {
 				return nil, LiquidError(fmt.Sprintf("Missing tag terminator: %v", token), ctx)
 			}
-		case strings.HasPrefix(token, VarStartToken):
+		case strings.HasPrefix(token, varStartToken):
 			nodeList = append(nodeList, createVariable(token, ctx))
 			blank = false
 		default:
 			nodeList = append(nodeList, node{value: token})
-			blank = blank && TokenIsBlank.MatchString(token)
+			blank = blank && tokenIsBlankRegexp.MatchString(token)
 		}
 		ctx.line += strings.Count(token, "\n")
 	}
@@ -147,6 +151,14 @@ func ParseTemplate(template string) (*Template, error) {
 	nodeList, err := consume(tokenizer, ctx)
 
 	return &Template{nodeList}, err
+}
+
+func (t *Template) Render(vars Vars) (string, error) {
+	if len(t.nodes) == 0 || t.nodes[0].Blank() {
+		return "", nil
+	}
+
+	return t.nodes[0].Render(vars)
 }
 
 //     def render_node(node, context)
@@ -169,7 +181,7 @@ func ParseTemplate(template string) (*Template, error) {
 //     end
 
 func createVariable(token string, ctx *parseContext) node {
-	parsed := ContentOfVariable.FindStringSubmatch(token)
+	parsed := contentOfVariableRegexp.FindStringSubmatch(token)
 	return node{value: parsed[0]}
 }
 
