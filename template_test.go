@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func checkTemplate(t *testing.T, tpl string, want []node) {
+func checkTemplate(t *testing.T, tpl string, want []Node) {
 	template, err := ParseTemplate(tpl)
 	if err != nil {
 		t.Error(err)
@@ -16,15 +16,15 @@ func checkTemplate(t *testing.T, tpl string, want []node) {
 }
 
 func TestBlankSpace(t *testing.T) {
-	checkTemplate(t, "  ", []node{
-		{value: "  "},
+	checkTemplate(t, "  ", []Node{
+		stringNode("  "),
 	})
 }
 
 func TestVariableBeginning(t *testing.T) {
-	checkTemplate(t, "{{funk}}  ", []node{
-		{value: "{{funk}}"},
-		{value: "  "},
+	checkTemplate(t, "{{funk}}  ", []Node{
+		node{value: "{{funk}}"},
+		stringNode("  "),
 	})
 
 	//     assert_equal Variable, template.root.nodelist[0].class
@@ -32,9 +32,9 @@ func TestVariableBeginning(t *testing.T) {
 }
 
 func TestVariableEnd(t *testing.T) {
-	checkTemplate(t, "  {{funk}}", []node{
-		{value: "  "},
-		{value: "{{funk}}"},
+	checkTemplate(t, "  {{funk}}", []Node{
+		stringNode("  "),
+		node{value: "{{funk}}"},
 	})
 
 	//     assert_equal String, template.root.nodelist[0].class
@@ -42,10 +42,10 @@ func TestVariableEnd(t *testing.T) {
 }
 
 func TestVariableMiddle(t *testing.T) {
-	checkTemplate(t, "  {{funk}}  ", []node{
-		{value: "  "},
-		{value: "{{funk}}"},
-		{value: "  "},
+	checkTemplate(t, "  {{funk}}  ", []Node{
+		stringNode("  "),
+		node{value: "{{funk}}"},
+		stringNode("  "),
 	})
 	//     assert_equal String, template.root.nodelist[0].class
 	//     assert_equal Variable, template.root.nodelist[1].class
@@ -53,38 +53,38 @@ func TestVariableMiddle(t *testing.T) {
 }
 
 func TestVariableManyEmbeddedFragments(t *testing.T) {
-	checkTemplate(t, "  {{funk}} {{so}} {{brother}} ", []node{
-		{value: "  "},
-		{value: "{{funk}}"},
-		{value: " "},
-		{value: "{{so}}"},
-		{value: " "},
-		{value: "{{brother}}"},
-		{value: " "},
+	checkTemplate(t, "  {{funk}} {{so}} {{brother}} ", []Node{
+		stringNode("  "),
+		node{value: "{{funk}}"},
+		stringNode(" "),
+		node{value: "{{so}}"},
+		stringNode(" "),
+		node{value: "{{brother}}"},
+		stringNode(" "),
 	})
 	//     assert_equal [String, Variable, String, Variable, String, Variable, String],
 	//       block_types(template.root.nodelist)
 }
 
 func TestWithBlock(t *testing.T) {
-	checkTemplate(t, `  {% comment %} {% endcomment %} `, []node{
-		{value: "  "},
-		{nodelist: []node{
-			{value: "{% comment %}"},
-			{value: " "},
-			{value: "{% endcomment %}"},
+	checkTemplate(t, `  {% comment %} {% endcomment %} `, []Node{
+		stringNode("  "),
+		node{nodelist: []Node{
+			node{value: "{% comment %}"},
+			stringNode(" "),
+			node{value: "{% endcomment %}"},
 		}},
-		{value: " "},
+		stringNode(" "),
 	})
 }
 
 func TestWithCustomTag(t *testing.T) {
 	RegisterTag("testtag", &commentTag{})
-	checkTemplate(t, `{% testtag %} {% endtesttag %}`, []node{
+	checkTemplate(t, `{% testtag %} {% endtesttag %}`, []Node{
 		node{
-			nodelist: []node{
+			nodelist: []Node{
 				node{value: "{% testtag %}"},
-				node{value: " "},
+				stringNode(" "),
 				node{value: "{% endtesttag %}"},
 			},
 		},

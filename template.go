@@ -20,16 +20,27 @@ const (
 )
 
 type Template struct {
-	nodes []node
+	nodes []Node
 }
 
 type Node interface {
 	Render(Vars) (string, error)
+	Blank() bool
+}
+
+type stringNode string
+
+func (n stringNode) Render(v Vars) (string, error) {
+	return string(n), nil
+}
+
+func (n stringNode) Blank() bool {
+	return n == ""
 }
 
 type node struct {
 	value    string
-	nodelist []node
+	nodelist []Node
 }
 
 func (n node) Blank() bool {
@@ -54,7 +65,7 @@ func (t *commentTag) Parse(name, markup string, tokenizer *Tokenizer, ctx *parse
 		end:  fmt.Sprintf("end%v", name),
 	}
 
-	nodelist, err := consume(tokenizer, subctx)
+	nodelist, err := tokensToNodeList(tokenizer, subctx)
 	if err != nil {
 		panic(err)
 	}
@@ -73,7 +84,7 @@ func (t *commentTag) Parse(name, markup string, tokenizer *Tokenizer, ctx *parse
 	//     # pass it to the current block for special handling or error reporting
 	//     unknown_tag(end_tag_name, end_tag_params, tokens)
 	//   end
-	return node{"", append([]node{{value: markup}}, nodelist...)}
+	return node{"", append([]Node{node{value: markup}}, nodelist...)}
 }
 
 // RegisterTag registers a new tag (big surprise)
@@ -96,8 +107,8 @@ func (c *parseContext) String() string {
 	return fmt.Sprintf("Line: %v, End: %v", c.line, c.end)
 }
 
-func consume(tokenizer *Tokenizer, ctx *parseContext) ([]node, error) {
-	var nodeList []node
+func tokensToNodeList(tokenizer *Tokenizer, ctx *parseContext) ([]Node, error) {
+	var nodeList []Node
 
 	blank := true
 
@@ -138,7 +149,7 @@ func consume(tokenizer *Tokenizer, ctx *parseContext) ([]node, error) {
 			nodeList = append(nodeList, createVariable(token, ctx))
 			blank = false
 		default:
-			nodeList = append(nodeList, node{value: token})
+			nodeList = append(nodeList, stringNode(token))
 			blank = blank && tokenIsBlankRegexp.MatchString(token)
 		}
 		ctx.line += strings.Count(token, "\n")
@@ -155,7 +166,7 @@ func ParseTemplate(template string) (*Template, error) {
 	// TODO: this strips out the values being split on, but we need those!
 	ctx := &parseContext{line: 0}
 
-	nodeList, err := consume(tokenizer, ctx)
+	nodeList, err := tokensToNodeList(tokenizer, ctx)
 
 	return &Template{nodeList}, err
 }
@@ -165,6 +176,7 @@ func (t *Template) Render(vars Vars) (string, error) {
 		return "", nil
 	}
 
+	// Obviously we need to actually render the rest of the nodes.
 	return t.nodes[0].Render(vars)
 }
 
