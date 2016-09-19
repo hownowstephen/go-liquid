@@ -7,177 +7,206 @@ import (
 
 // Unit tests (unit/variable_unit_test.rb)
 
-func checkVariable(t *testing.T, markup, wantName string, wantFilters []filter) {
+func checkVariable(t *testing.T, markup, wantName string, wantFilters []Filter, checkLookup bool) *Variable {
 	v, err := CreateVariable(markup)
 	if err != nil {
 		t.Error(err)
-		return
+		return v
 	}
 
-	vl := ParseVariableLookup(markup)
-	if vl == nil {
-		t.Errorf("Couldn't create VariableLookup for %v", markup)
-		return
+	if checkLookup {
+		vl := ParseVariableLookup(markup)
+		if vl == nil {
+			t.Errorf("Couldn't create VariableLookup for %v", markup)
+			return v
+		}
+
+		if v.name.Name() != vl.Name() {
+			t.Errorf("%v lookup name mismatch, want: %v, got %v", markup, vl.name, v.name.Name())
+		}
 	}
 
-	if v.name != vl.name {
-		t.Errorf("%v lookup name mismatch, want: %v, got %v", markup, vl.name, v.name)
+	if v.name.Name() != wantName {
+		t.Errorf("%v name mismatched, want: %v, got: %v", markup, wantName, v.name.Name())
 	}
 
-	if v.name != wantName {
-		t.Errorf("%v name mismatched, want: %v, got: %v", markup, wantName, v.name)
-	}
 	if !reflect.DeepEqual(v.filters, wantFilters) {
 		t.Errorf("%v filters mismatched, want: %v, got: %v", markup, wantFilters, v.filters)
 	}
+
+	return v
 }
 
 func TestVariable(t *testing.T) {
-	checkVariable(t, "hello", "hello", nil)
+	checkVariable(t, "hello", "hello", nil, true)
 }
 
 func TestFilters(t *testing.T) {
-	checkVariable(t, "hello | textileze", "hello", []filter{
-		{filter: "textileze"},
-	})
-	checkVariable(t, "hello | textileze | paragraph", "hello", []filter{
-		{filter: "textileze"},
-		{filter: "paragraph"},
-	})
-	checkVariable(t, `hello | strftime: '%Y'`, "hello", []filter{
-		{filter: "strftime", args: []string{`%Y`}},
-	})
-	checkVariable(t, `'typo' | link_to: 'Typo', true`, "typo", []filter{
-		{filter: "link_to", args: []string{`Typo`, "true"}},
-	})
-	checkVariable(t, `'typo' | link_to: 'Typo', false`, "typo", []filter{
-		{filter: "link_to", args: []string{`Typo`, "false"}},
-	})
-	checkVariable(t, `'foo' | repeat: 3`, "foo", []filter{
-		{filter: "repeat", args: []string{"3"}},
-	})
-	checkVariable(t, `'foo' | repeat: 3, 3`, "foo", []filter{
-		{filter: "repeat", args: []string{"3", "3"}},
-	})
-	checkVariable(t, `'foo' | repeat: 3, 3, 3`, "foo", []filter{
-		{filter: "repeat", args: []string{"3", "3", "3"}},
-	})
-	checkVariable(t, `hello | strftime: '%Y, okay?'`, "hello", []filter{
-		{filter: "strftime", args: []string{`%Y, okay?`}},
-	})
-	checkVariable(t, `hello | things: "%Y, okay?", 'the other one'`, "hello", []filter{
-		{filter: "things", args: []string{`%Y, okay?`, "the other one"}},
-	})
+	checkVariable(t, "hello | textileze", "hello", []Filter{
+		{name: "textileze"},
+	}, true)
+	checkVariable(t, "hello | textileze | paragraph", "hello", []Filter{
+		{name: "textileze"},
+		{name: "paragraph"},
+	}, true)
+	checkVariable(t, `hello | strftime: '%Y'`, "hello", []Filter{
+		{name: "strftime", args: []Expression{stringExpr(`%Y`)}},
+	}, true)
+	checkVariable(t, `'typo' | link_to: 'Typo', true`, "typo", []Filter{
+		{name: "link_to", args: []Expression{stringExpr(`Typo`), boolExpr(true)}},
+	}, true)
+	checkVariable(t, `'typo' | link_to: 'Typo', false`, "typo", []Filter{
+		{name: "link_to", args: []Expression{stringExpr(`Typo`), boolExpr(false)}},
+	}, true)
+	checkVariable(t, `'foo' | repeat: 3`, "foo", []Filter{
+		{name: "repeat", args: []Expression{integerExpr(3)}},
+	}, true)
+	checkVariable(t, `'foo' | repeat: 3, 3`, "foo", []Filter{
+		{name: "repeat", args: []Expression{integerExpr(3), integerExpr(3)}},
+	}, true)
+	checkVariable(t, `'foo' | repeat: 3, 3, 3`, "foo", []Filter{
+		{name: "repeat", args: []Expression{integerExpr(3), integerExpr(3), integerExpr(3)}},
+	}, true)
+	checkVariable(t, `hello | strftime: '%Y, okay?'`, "hello", []Filter{
+		{name: "strftime", args: []Expression{stringExpr(`%Y, okay?`)}},
+	}, true)
+	checkVariable(t, `hello | things: "%Y, okay?", 'the other one'`, "hello", []Filter{
+		{name: "things", args: []Expression{stringExpr(`%Y, okay?`), stringExpr("the other one")}},
+	}, true)
 }
 
 func TestFilterWithDateParameter(t *testing.T) {
-	checkVariable(t, `'2006-06-06' | date: "%m/%d/%y"`, "2006-06-06", []filter{
-		{filter: "date", args: []string{`%m/%d/%y`}},
-	})
+	checkVariable(t, `'2006-06-06' | date: "%m/%d/%y"`, "2006-06-06", []Filter{
+		{name: "date", args: []Expression{stringExpr(`%m/%d/%y`)}},
+	}, true)
 }
 
 func TestFiltersWithoutWhitespace(t *testing.T) {
-	checkVariable(t, "hello | textileze | paragraph", "hello", []filter{
-		{filter: "textileze"},
-		{filter: "paragraph"},
-	})
-	checkVariable(t, "hello|textileze|paragraph", "hello", []filter{
-		{filter: "textileze"},
-		{filter: "paragraph"},
-	})
-	checkVariable(t, "hello|replace:'foo','bar'|textileze", "hello", []filter{
-		{filter: "replace", args: []string{"foo", "bar"}},
-		{filter: "textileze"},
-	})
+	checkVariable(t, "hello | textileze | paragraph", "hello", []Filter{
+		{name: "textileze"},
+		{name: "paragraph"},
+	}, true)
+	checkVariable(t, "hello|textileze|paragraph", "hello", []Filter{
+		{name: "textileze"},
+		{name: "paragraph"},
+	}, true)
+	checkVariable(t, "hello|replace:'foo','bar'|textileze", "hello", []Filter{
+		{name: "replace", args: []Expression{stringExpr("foo"), stringExpr("bar")}},
+		{name: "textileze"},
+	}, true)
 }
 
 // XXX: This requires a lax parser, which we don't have
 // func TestSymbol(t *testing.T) {
-// 	checkVariable(t, "http://disney.com/logo.gif | image: 'med' ", "http://disney.com/logo.gif", []filter{
-// 		{filter: "image", args: []string{"med"}},
-// 	})
+// 	checkVariable(t, "http://disney.com/logo.gif | image: 'med' ", "http://disney.com/logo.gif", []Filter{
+// 		{name: "image", args: []Expression{"med"}},
+// 	}, true)
 // }
 
 func TestStringToFilter(t *testing.T) {
-	checkVariable(t, "'http://disney.com/logo.gif' | image: 'med' ", "http://disney.com/logo.gif", []filter{
-		{filter: "image", args: []string{"med"}},
-	})
+	checkVariable(t, "'http://disney.com/logo.gif' | image: 'med' ", "http://disney.com/logo.gif", []Filter{
+		{name: "image", args: []Expression{stringExpr("med")}},
+	}, false)
 }
 
 // merges test_string_single_quoted and test_string_double_quoted
 func TestStringQuoting(t *testing.T) {
-	checkVariable(t, `'hello'`, "hello", nil)
-	checkVariable(t, `"hello"`, "hello", nil)
+	checkVariable(t, `'hello'`, "hello", nil, true)
+	checkVariable(t, `"hello"`, "hello", nil, true)
 }
 
-//   def test_integer
-//     var = create_variable(%( 1000 ))
-//     assert_equal 1000, var.name
-//   end
+func TestIntegerVariable(t *testing.T) {
+	v := checkVariable(t, `1000`, `1000`, nil, true)
+	if v != nil && v.name != integerExpr(1000) {
+		t.Errorf("Expected integer, got %v", reflect.TypeOf(v.name))
+	}
+}
 
-//   def test_float
-//     var = create_variable(%( 1000.01 ))
-//     assert_equal 1000.01, var.name
-//   end
+func TestFloatVariable(t *testing.T) {
+	v := checkVariable(t, `1000.01`, `1000.01`, nil, true)
+	if v != nil && v.name != floatExpr(1000.01) {
+		t.Errorf("Expected float, got %v", reflect.TypeOf(v.name))
+	}
+}
 
-//   def test_dashes
-//     assert_equal VariableLookup.new('foo-bar'), create_variable('foo-bar').name
-//     assert_equal VariableLookup.new('foo-bar-2'), create_variable('foo-bar-2').name
+func TestDashes(t *testing.T) {
+	for _, expr := range []string{"foo-bar", "foo-bar-2"} {
+		vl := ParseVariableLookup(expr)
+		v, err := CreateVariable(expr)
+		if err != nil {
+			t.Errorf("%v couldn't create variable: %v", expr, err)
+			continue
+		}
+		if v.name.Name() != vl.Name() {
+			t.Errorf(`mismatch! Lookup: "%v", Variable: "%v"`, vl.Name(), v.name.Name())
+		}
+	}
 
-//     with_error_mode :strict do
-//       assert_raises(Liquid::SyntaxError) { create_variable('foo - bar') }
-//       assert_raises(Liquid::SyntaxError) { create_variable('-foo') }
-//       assert_raises(Liquid::SyntaxError) { create_variable('2foo') }
-//     end
-//   end
+	for _, badExpr := range []string{"foo - bar", "-foo", "2foo"} {
+		_, err := CreateVariable(badExpr)
+		if err == nil {
+			t.Errorf(`expression "%v" should not be a valid variable`, badExpr)
+		}
+	}
+}
 
-//   def test_string_with_special_chars
-//     var = create_variable(%( 'hello! $!@.;"ddasd" ' ))
-//     assert_equal 'hello! $!@.;"ddasd" ', var.name
-//   end
+func TestStringWithSpecialChars(t *testing.T) {
+	v := checkVariable(t, `'hello! $!@.;"ddasd" '`, `hello! $!@.;"ddasd" `, nil, false)
+	if v != nil && v.name != stringExpr(`hello! $!@.;"ddasd" `) {
+		t.Errorf("wrong type, want stringExpr, got: %v", reflect.TypeOf(v.name))
+	}
+}
 
-//   def test_string_dot
-//     var = create_variable(%( test.test ))
-//     assert_equal VariableLookup.new('test.test'), var.name
-//   end
+func TestStringDot(t *testing.T) {
+	checkVariable(t, "test.test", "test.test", nil, true)
+}
 
-//   def test_filter_with_keyword_arguments
-//     var = create_variable(%( hello | things: greeting: "world", farewell: 'goodbye'))
-//     assert_equal VariableLookup.new('hello'), var.name
-//     assert_equal [['things', [], { 'greeting' => 'world', 'farewell' => 'goodbye' }]], var.filters
-//   end
+func TestFilterWithKeywordArguments(t *testing.T) {
+	checkVariable(t, `hello | things: greeting: "world", farewell: 'goodbye'`, "hello", []Filter{
+		Filter{
+			name: "things",
+			kwargs: map[string]Expression{
+				"greeting": stringExpr("world"),
+				"farewell": stringExpr("goodbye"),
+			},
+		},
+	}, true)
+}
 
+// XXX: lax parsing is not implemented
 //   def test_lax_filter_argument_parsing
 //     var = create_variable(%( number_of_comments | pluralize: 'comment': 'comments' ), error_mode: :lax)
 //     assert_equal VariableLookup.new('number_of_comments'), var.name
 //     assert_equal [['pluralize', ['comment', 'comments']]], var.filters
 //   end
 
-//   def test_strict_filter_argument_parsing
-//     with_error_mode(:strict) do
-//       assert_raises(SyntaxError) do
-//         create_variable(%( number_of_comments | pluralize: 'comment': 'comments' ))
-//       end
-//     end
-//   end
+func TestStringFilterArgumentParsing(t *testing.T) {
+	_, err := CreateVariable("number_of_comments | pluralize: 'comment': 'comments'")
+	if err == nil {
+		t.Error("CreateVariable should have failed due to invalid filters")
+	}
+}
 
 //   def test_output_raw_source_of_variable
 //     var = create_variable(%( name_of_variable | upcase ))
 //     assert_equal " name_of_variable | upcase ", var.raw
 //   end
 
-//   def test_variable_lookup_interface
-//     lookup = VariableLookup.new('a.b.c')
-//     assert_equal 'a', lookup.name
-//     assert_equal ['b', 'c'], lookup.lookups
-//   end
+func TestVariableLookupInterface(t *testing.T) {
+	lookup := ParseVariableLookup("a.b.c")
+	if lookup.name != literalExpr("a") {
+		t.Errorf(`bad name, want: literalExpr("a"), got: %v("%v")`, reflect.TypeOf(lookup.name), lookup.name.Name())
+	}
 
-//   private
+	if len(lookup.lookups) != 2 {
+		t.Errorf("expected 2 lookups, got %v", len(lookup.lookups))
+		return
+	}
 
-//   def create_variable(markup, options = {})
-//     Variable.new(markup, ParseContext.new(options))
-//   end
-// end
+	if !reflect.DeepEqual(lookup.lookups, []Expression{literalExpr("b"), literalExpr("c")}) {
+		t.Errorf(`bad lookups, want: [literalExpr("a"), literalExpr("b")], got: [%v("%v"), %v("%v")]`, reflect.TypeOf(lookup.lookups[0]), lookup.lookups[0].Name(), reflect.TypeOf(lookup.lookups[1]), lookup.lookups[1].Name())
+	}
+}
 
 func checkTemplateRender(t *testing.T, template string, vars map[string]interface{}, want string) {
 
@@ -201,7 +230,7 @@ func TestSimpleVariable(t *testing.T) {
 }
 
 // def test_simple_variable
-//     template = Template.parse(%({{test}}))
+//     template = Template.parse(%({{test}}, true))
 //     assert_equal 'worked', template.render!('test' => 'worked')
 //     assert_equal 'worked wonderfully', template.render!('test' => 'worked wonderfully')
 //   end
@@ -217,7 +246,7 @@ func TestSimpleVariable(t *testing.T) {
 //   end
 
 //   def test_ignore_unknown
-//     template = Template.parse(%({{ test }}))
+//     template = Template.parse(%({{ test }}, true))
 //     assert_equal '', template.render!
 //   end
 
@@ -232,8 +261,8 @@ func TestSimpleVariable(t *testing.T) {
 //   end
 
 //   def test_hash_scoping
-//     template = Template.parse(%({{ test.test }}))
-//     assert_equal 'worked', template.render!('test' => { 'test' => 'worked' })
+//     template = Template.parse(%({{ test.test }}, true))
+//     assert_equal 'worked', template.render!('test' => { 'test' => 'worked' }, true)
 //   end
 
 //   def test_false_renders_as_false
@@ -247,13 +276,13 @@ func TestSimpleVariable(t *testing.T) {
 //   end
 
 //   def test_preset_assigns
-//     template = Template.parse(%({{ test }}))
+//     template = Template.parse(%({{ test }}, true))
 //     template.assigns['test'] = 'worked'
 //     assert_equal 'worked', template.render!
 //   end
 
 //   def test_reuse_parsed_template
-//     template = Template.parse(%({{ greeting }} {{ name }}))
+//     template = Template.parse(%({{ greeting }} {{ name }}, true))
 //     template.assigns['greeting'] = 'Goodbye'
 //     assert_equal 'Hello Tobi', template.render!('greeting' => 'Hello', 'name' => 'Tobi')
 //     assert_equal 'Hello ', template.render!('greeting' => 'Hello', 'unknown' => 'Tobi')
@@ -263,7 +292,7 @@ func TestSimpleVariable(t *testing.T) {
 //   end
 
 //   def test_assigns_not_polluted_from_template
-//     template = Template.parse(%({{ test }}{% assign test = 'bar' %}{{ test }}))
+//     template = Template.parse(%({{ test }}{% assign test = 'bar' %}{{ test }}, true))
 //     template.assigns['test'] = 'baz'
 //     assert_equal 'bazbar', template.render!
 //     assert_equal 'bazbar', template.render!
@@ -272,7 +301,7 @@ func TestSimpleVariable(t *testing.T) {
 //   end
 
 //   def test_hash_with_default_proc
-//     template = Template.parse(%(Hello {{ test }}))
+//     template = Template.parse(%(Hello {{ test }}, true))
 //     assigns = Hash.new { |h, k| raise "Unknown variable '#{k}'" }
 //     assigns['test'] = 'Tobi'
 //     assert_equal 'Hello Tobi', template.render!(assigns)

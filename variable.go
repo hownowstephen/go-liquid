@@ -9,19 +9,28 @@ var (
 	variableQuotedFragmentRegexp = regexp.MustCompile(fmt.Sprintf("%s(.*)", quotedFragmentRegexp.String())) // om
 )
 
+// Vars get passed in the render step of a request
+// and contain values and context information for the input
+// variables of the request
 type Vars map[string]interface{}
 
-type filter struct {
-	filter string
-	args   []string
-	kwargs map[string]string
-}
-
+// Variable is a single liquid variable expression
+// and any associated filters
 type Variable struct {
-	name    string
-	filters []filter
+	name    Expression
+	filters []Filter
 }
 
+// Filter is used to modify a Variable using the
+// liquid pipe syntax "x | f1 | f2"
+type Filter struct {
+	name   string
+	args   []Expression
+	kwargs map[string]Expression
+}
+
+// CreateVariable performs a parse of the supplied markup
+// and returns a Variable object
 func CreateVariable(value string) (*Variable, error) {
 
 	matches := variableQuotedFragmentRegexp.FindStringSubmatch(value)
@@ -30,17 +39,16 @@ func CreateVariable(value string) (*Variable, error) {
 		return nil, fmt.Errorf("Bad match")
 	}
 
-	return StrictParser{}.Parse(value)
+	return ParseStrict(value)
 }
 
-type VariableParser interface {
-	Parse(markup string) (*Variable, error)
-}
+// VariableParser is the signature of function required to perform
+// a parse of a liquid variable expression
+type VariableParser func(markup string) (*Variable, error)
 
-type StrictParser struct{}
-
-func (l StrictParser) Parse(markup string) (*Variable, error) {
-	var filters []filter
+// ParseStrict performs the strictest form of VariableParser parse
+func ParseStrict(markup string) (*Variable, error) {
+	var filters []Filter
 	p, err := NewParser(markup)
 	if err != nil {
 		return nil, err
@@ -85,36 +93,34 @@ func (l StrictParser) Parse(markup string) (*Variable, error) {
 	p.consume(tEndOfString)
 
 	return &Variable{
-		// FIXME: don't Render()
-		name:    name.Render(),
+		name:    name,
 		filters: filters,
 	}, nil
 }
 
-func ParseFilterExpressions(name string, unparsedArgs []string) filter {
-	var args []string
-	kwargs := make(map[string]string)
+// ParseFilterExpressions parses the filter args passed with a liquid variable
+func ParseFilterExpressions(name string, unparsedArgs []string) Filter {
+	var args []Expression
+	kwargs := make(map[string]Expression)
 
 	for _, a := range unparsedArgs {
-		//  if matches = a.match(/\A#{TagAttributes}\z/o)
-		if submatches := tagAttributesRegexp.FindAllStringSubmatch(a, -1); len(submatches) > 0 {
-			fmt.Println("SUBMATCH", submatches)
-
+		// Check for keyword arguments first, anything leftover will be treated like a regular argument
+		if submatches := tagAttributesRegexp.FindStringSubmatch(a); len(submatches) > 0 {
+			kwargs[submatches[1]] = ParseExpression(submatches[2])
 		} else {
-			// FIXME: don't Render() this
-			args = append(args, ParseExpression(a).Render())
+			args = append(args, ParseExpression(a))
 		}
 	}
 
-	// null out the map if it is empty
+	// null out the kwargs map if it is empty
+	// this ensures that Filter{name: blah} will match a parsed filter
 	if len(kwargs) == 0 {
 		kwargs = nil
 	}
 
-	return filter{
-		filter: name,
+	return Filter{
+		name:   name,
 		args:   args,
 		kwargs: kwargs,
 	}
-
 }

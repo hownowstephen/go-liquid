@@ -6,104 +6,41 @@ import (
 	"strconv"
 )
 
-var expressionLiterals = map[string]string{}
-
-// LITERALS = {
-//   nil => nil, 'nil'.freeze => nil, 'null'.freeze => nil, ''.freeze => nil,
-//   'true'.freeze  => true,
-//   'false'.freeze => false,
-//   'blank'.freeze => MethodLiteral.new(:blank?, '').freeze,
-//   'empty'.freeze => MethodLiteral.new(:empty?, '').freeze
-// }
-
-type Renderable interface {
-	Render() string
-}
-
-type NilLiteral struct{}
-
-func (n NilLiteral) Render() string { return "nil" }
-
-type BoolLiteral bool
-
-func (b BoolLiteral) Render() string {
-	if b {
-		return "true"
-	}
-	return "false"
-}
-
-type EmptyLiteral struct{}
-
-func (e EmptyLiteral) Render() string { return "" }
-
-type StringLiteral struct {
-	value string
-}
-
-func (s StringLiteral) Render() string {
-	return s.value
-}
-
-type RangeLookup struct {
-	start int
-	end   int
-}
-
-func (r RangeLookup) Render() string {
-	return fmt.Sprintf("%v..%v", r.start, r.end)
-}
-
-type IntegerLiteral struct {
-	value int
-}
-
-func (i IntegerLiteral) Render() string {
-	return strconv.Itoa(i.value)
-}
-
-type FloatLiteral struct {
-	value float64
-}
-
-func (i FloatLiteral) Render() string {
-	return "this is a cool float"
-}
-
+// Define some constant literals
 var (
+	Nil   = nilExpr{}
+	True  = boolExpr(true)
+	False = boolExpr(false)
+	// XXX: MethodLiteral isn't implemented
+	//   'blank'.freeze => MethodLiteral.new(:blank?, '').freeze,
+	//   'empty'.freeze => MethodLiteral.new(:empty?, '').freeze
+
+	// Regexes for parsing different types of literals
 	singleQuotedStringRegex = regexp.MustCompile(`(?ms)\A'(.*)'\z`)
 	doubleQuotedStringRegex = regexp.MustCompile(`(?ms)\A"(.*)"\z`)
 	integerRegex            = regexp.MustCompile(`\A(-?\d+)\z`)
 	rangeRegex              = regexp.MustCompile(`\A\((\S+)\.\.(\S+)\)\z`)
 	floatRegex              = regexp.MustCompile(`\A(-?\d[\d\.]+)\z`)
-	//     when //m # Single quoted strings
-//       $1
-//     when /\A"(.*)"\z/m # Double quoted strings
-//       $1
-//     when /\A(-?\d+)\z/ # Integer and floats
-//       $1.to_i
-//     when /\A\((\S+)\.\.(\S+)\)\z/ # Ranges
-//       RangeLookup.parse($1, $2)
-//     when /\A(-?\d[\d\.]+)\z/ # Floats
 )
 
 // ParseExpression takes an expression and converts it into something usable by Liquid
 // XXX: not sure that renderable is the right approach. maybe just interface{} and then the render
 // func will have to know how to deal with it? otherwise we have all these literals
-func ParseExpression(markup string) Renderable {
+func ParseExpression(markup string) Expression {
 	switch markup {
 	case "nil", "null", "":
-		return NilLiteral{}
+		return Nil
 	case "false":
-		return BoolLiteral(false)
+		return False
 	case "true":
-		return BoolLiteral(true)
-	case "blank", "empty":
-		return EmptyLiteral{}
+		return True
+		// XXX: implement
+		// case "blank", "empty":
+		// 	return EmptyLiteral{}
 	}
 
 	if singleQuotedStringRegex.MatchString(markup) || doubleQuotedStringRegex.MatchString(markup) {
-		return StringLiteral{markup[1 : len(markup)-1]}
+		return stringExpr(markup[1 : len(markup)-1])
 	}
 
 	if integerRegex.MatchString(markup) {
@@ -112,7 +49,7 @@ func ParseExpression(markup string) Renderable {
 			// XXX: this needs a real handler
 			panic(err)
 		}
-		return IntegerLiteral{value}
+		return integerExpr(value)
 	}
 
 	if submatch := rangeRegex.FindAllStringSubmatch(markup, 1); len(submatch) > 0 {
@@ -125,7 +62,7 @@ func ParseExpression(markup string) Renderable {
 		if err != nil {
 			panic(err)
 		}
-		return RangeLookup{start, end}
+		return rangeExpr{start, end}
 	}
 
 	if floatRegex.MatchString(markup) {
@@ -133,29 +70,94 @@ func ParseExpression(markup string) Renderable {
 		if err != nil {
 			panic(err)
 		}
-		return FloatLiteral{f}
+		return floatExpr(f)
 	}
 
 	return ParseVariableLookup(markup)
 }
 
-// def self.parse(markup)
-//   if LITERALS.key?(markup)
-//     LITERALS[markup]
-//   else
-//     case markup
-//     when /\A'(.*)'\z/m # Single quoted strings
-//       $1
-//     when /\A"(.*)"\z/m # Double quoted strings
-//       $1
-//     when /\A(-?\d+)\z/ # Integer and floats
-//       $1.to_i
-//     when /\A\((\S+)\.\.(\S+)\)\z/ # Ranges
-//       RangeLookup.parse($1, $2)
-//     when // # Floats
-//       $1.to_f
-//     else
-//       VariableLookup.parse(markup)
-//     end
-//   end
-// end
+// Expression objects contain specific types of usable data
+// that can be rendered to a string value at runtime.
+type Expression interface {
+	Render(Vars) string
+	// Name might be better as a helper method that switches on type
+	Name() string
+}
+
+// Base expression types
+
+type nilExpr struct{}
+
+func (e nilExpr) Render(v Vars) string { return "nil" }
+
+func (e nilExpr) Name() string {
+	return e.Render(nil)
+}
+
+type boolExpr bool
+
+func (e boolExpr) Render(v Vars) string {
+	if e {
+		return "true"
+	}
+	return "false"
+}
+
+func (e boolExpr) Name() string {
+	return e.Render(nil)
+}
+
+type stringExpr string
+
+func (e stringExpr) Render(v Vars) string {
+	return string(e)
+}
+
+func (e stringExpr) Name() string {
+	return e.Render(nil)
+}
+
+type integerExpr int
+
+func (e integerExpr) Render(v Vars) string {
+	return strconv.Itoa(int(e))
+}
+
+func (e integerExpr) Name() string {
+	return e.Render(nil)
+}
+
+type floatExpr float64
+
+// XXX: Implement properly
+func (f floatExpr) Render(v Vars) string {
+	return "this is a cool float"
+}
+
+func (f floatExpr) Name() string {
+	return f.Render(nil)
+}
+
+type rangeExpr struct {
+	start int
+	end   int
+}
+
+func (e rangeExpr) Render(v Vars) string {
+	return fmt.Sprintf("%v..%v", e.start, e.end)
+}
+
+func (e rangeExpr) Name() string {
+	return e.Render(nil)
+}
+
+// literalExpr acts like an atom
+type literalExpr string
+
+func (e literalExpr) Render(v Vars) string {
+	return string(e)
+}
+
+func (e literalExpr) Name() string {
+	return string(e)
+}

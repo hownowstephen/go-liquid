@@ -5,14 +5,18 @@ import "regexp"
 // VariableLookup objects capture an expression as a series of lookup objects
 // to be applied when rendering the variable
 type VariableLookup struct {
-	name         string
-	lookups      []string
+	name         Expression
+	lookups      []Expression
 	commandFlags uint
 }
 
-func (v *VariableLookup) Render() string {
+func (v *VariableLookup) Render(vars Vars) string {
 	// XXX: this is wrong, obviously
-	return v.name
+	return v.name.Render(vars)
+}
+
+func (v *VariableLookup) Name() string {
+	return v.name.Render(nil)
 }
 
 var (
@@ -23,6 +27,7 @@ var (
 
 func ParseVariableLookup(markup string) *VariableLookup {
 
+	var name Expression
 	var commandFlags uint
 
 	lookups := variableParserRegexp.FindAllString(markup, -1)
@@ -31,11 +36,11 @@ func ParseVariableLookup(markup string) *VariableLookup {
 		panic("OHNO WAT DO NOW")
 	}
 
-	name := lookups[0]
+	name = literalExpr(lookups[0])
 
-	if squareBracketedRegexp.MatchString(name) {
+	if squareBracketedRegexp.MatchString(lookups[0]) {
 		// XXX: don't Render()
-		name = ParseExpression(name).Render()
+		name = ParseExpression(lookups[0])
 	}
 
 	if len(lookups) == 1 {
@@ -43,11 +48,13 @@ func ParseVariableLookup(markup string) *VariableLookup {
 	}
 
 	// Drop the name from the list
-	lookups = lookups[1:]
+	lookupExpressions := make([]Expression, len(lookups)-1)
 
-	for i, lookup := range lookups {
+	for i, lookup := range lookups[1:] {
 		if squareBracketedRegexp.MatchString(lookup) {
-			lookups[i] = ParseExpression(lookup).Render()
+			lookupExpressions[i] = ParseExpression(lookup)
+		} else {
+			lookupExpressions[i] = literalExpr(lookup)
 		}
 
 		// can be optimized
@@ -60,7 +67,7 @@ func ParseVariableLookup(markup string) *VariableLookup {
 
 	return &VariableLookup{
 		name:         name,
-		lookups:      lookups,
+		lookups:      lookupExpressions,
 		commandFlags: commandFlags,
 	}
 }
