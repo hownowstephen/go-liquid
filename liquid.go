@@ -7,13 +7,7 @@ import (
 	"regexp"
 )
 
-const (
-	ArgumentSeparator          = ','
-	FilterArgumentSeparator    = ':'
-	VariableAttributeSeparator = '.'
-)
-
-// Liquid regexes
+// Regular Expressions for parsing liquid tags
 var (
 	filterSeparatorRegexp       = regexp.MustCompile(`\|`)
 	tagStartRegexp              = regexp.MustCompile(`\{\%`)
@@ -24,10 +18,10 @@ var (
 	variableEndRegexp           = regexp.MustCompile(`\}\}`)
 	variableIncompleteEndRegexp = regexp.MustCompile(`\}\}?`)
 	quotedStringRegexp          = regexp.MustCompile(`"[^"]*"|'[^']*'`)
-	quotedFragmentRegexp        = regexp.MustCompile(fmt.Sprintf(`%v|(?:[^\s,\|'"]|%v)+`, quotedStringRegexp.String(), quotedStringRegexp.String())) // o
-	tagAttributesRegexp         = regexp.MustCompile(fmt.Sprintf(`(\w+)\s*\:\s*(%v)`, quotedFragmentRegexp.String()))                                // o
+	quotedFragmentRegexp        = regexp.MustCompile(fmt.Sprintf(`%v|(?:[^\s,\|'"]|%v)+`, quotedStringRegexp, quotedStringRegexp))
+	tagAttributesRegexp         = regexp.MustCompile(fmt.Sprintf(`(\w+)\s*\:\s*(%v)`, quotedFragmentRegexp))
 	anyStartingTagRegexp        = regexp.MustCompile(`\{\{|\{\%`)
-	partialTemplateParserRegexp = regexp.MustCompile(fmt.Sprintf(`(?m)%v.*?%v|%v.*?%v`, tagStartRegexp.String(), tagEndRegexp.String(), variableStartRegexp.String(), variableIncompleteEndRegexp.String())) // om
-	templateParserRegexp        = regexp.MustCompile(fmt.Sprintf(`(?m)(%v|%v)`, partialTemplateParserRegexp.String(), anyStartingTagRegexp.String()))                                                        // om
-	variableParserRegexp        = regexp.MustCompile(fmt.Sprintf(`\[[^\]]+\]|%v+\??`, variableSegmentRegexp.String()))                                                                                       // o
+	partialTemplateParserRegexp = regexp.MustCompile(fmt.Sprintf(`(?ms)%v.*?%v|%v.*?%v`, tagStartRegexp, tagEndRegexp, variableStartRegexp, variableIncompleteEndRegexp))
+	templateParserRegexp        = regexp.MustCompile(fmt.Sprintf(`(?ms)(%v|%v)`, partialTemplateParserRegexp, anyStartingTagRegexp))
+	variableParserRegexp        = regexp.MustCompile(fmt.Sprintf(`\[[^\]]+\]|%v+\??`, variableSegmentRegexp))
 )

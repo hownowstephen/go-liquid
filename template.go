@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+// Combines template.rb, document.rb and block_body.rb
+
 var (
 	fullTokenRegexp         = regexp.MustCompile(fmt.Sprintf(`(?m)\A%v\s*(\w+)\s*(.*)?%v\z`, tagStartRegexp, tagEndRegexp)) // om
 	contentOfVariableRegexp = regexp.MustCompile(fmt.Sprintf(`(?m)\A%v(.*)%v\z`, variableStartRegexp, variableEndRegexp))   // om
@@ -19,6 +21,10 @@ const (
 
 type Template struct {
 	nodes []node
+}
+
+type Node interface {
+	Render(Vars) (string, error)
 }
 
 type node struct {
@@ -71,6 +77,7 @@ func (t *commentTag) Parse(name, markup string, tokenizer *Tokenizer, ctx *parse
 }
 
 // RegisterTag registers a new tag (big surprise)
+// and probably needs a mutex?
 func RegisterTag(name string, tag Tag) {
 	RegisteredTags[name] = tag
 }

@@ -123,7 +123,7 @@ func TestIntegerVariable(t *testing.T) {
 }
 
 func TestFloatVariable(t *testing.T) {
-	v := checkVariable(t, `1000.01`, `1000.01`, nil, true)
+	v := checkVariable(t, `1000.01`, `1000.01`, nil, false)
 	if v != nil && v.name != floatExpr(1000.01) {
 		t.Errorf("Expected float, got %v", reflect.TypeOf(v.name))
 	}
@@ -143,9 +143,9 @@ func TestDashes(t *testing.T) {
 	}
 
 	for _, badExpr := range []string{"foo - bar", "-foo", "2foo"} {
-		_, err := CreateVariable(badExpr)
+		v, err := CreateVariable(badExpr)
 		if err == nil {
-			t.Errorf(`expression "%v" should not be a valid variable`, badExpr)
+			t.Errorf(`expression "%v" should not be a valid variable, got: %v`, badExpr, v.name)
 		}
 	}
 }
@@ -158,7 +158,7 @@ func TestStringWithSpecialChars(t *testing.T) {
 }
 
 func TestStringDot(t *testing.T) {
-	checkVariable(t, "test.test", "test.test", nil, true)
+	checkVariable(t, "test.test", "test", nil, true)
 }
 
 func TestFilterWithKeywordArguments(t *testing.T) {
@@ -187,10 +187,17 @@ func TestStringFilterArgumentParsing(t *testing.T) {
 	}
 }
 
-//   def test_output_raw_source_of_variable
-//     var = create_variable(%( name_of_variable | upcase ))
-//     assert_equal " name_of_variable | upcase ", var.raw
-//   end
+func TestOutputRawSourceOfVariable(t *testing.T) {
+	source := " name_of_variable | upcase "
+	v, err := CreateVariable(source)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if v.markup != source {
+		t.Errorf("variable markup mismatched - want: %v, got: %v", source, v.markup)
+	}
+}
 
 func TestVariableLookupInterface(t *testing.T) {
 	lookup := ParseVariableLookup("a.b.c")
@@ -209,7 +216,6 @@ func TestVariableLookupInterface(t *testing.T) {
 }
 
 func checkTemplateRender(t *testing.T, template string, vars map[string]interface{}, want string) {
-
 	tpl, err := ParseTemplate(template)
 	if err != nil {
 		t.Errorf("Couldn't parse the template: %v", err)
@@ -224,10 +230,6 @@ func checkTemplateRender(t *testing.T, template string, vars map[string]interfac
 }
 
 // Integration Tests
-
-func TestSimpleVariable(t *testing.T) {
-	checkTemplateRender(t, "{{test}}", map[string]interface{}{"test": "worked"}, "worked")
-}
 
 // def test_simple_variable
 //     template = Template.parse(%({{test}}, true))

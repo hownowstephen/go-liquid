@@ -129,9 +129,8 @@ func (e integerExpr) Name() string {
 
 type floatExpr float64
 
-// XXX: Implement properly
 func (f floatExpr) Render(v Vars) string {
-	return "this is a cool float"
+	return strconv.FormatFloat(float64(f), 'f', 2, 64)
 }
 
 func (f floatExpr) Name() string {

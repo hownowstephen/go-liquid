@@ -19,6 +19,7 @@ type Vars map[string]interface{}
 type Variable struct {
 	name    Expression
 	filters []Filter
+	markup  string
 }
 
 // Filter is used to modify a Variable using the
@@ -90,11 +91,14 @@ func ParseStrict(markup string) (*Variable, error) {
 	}
 
 	// consume an end of string, if there
-	p.consume(tEndOfString)
+	if _, err = p.consume(tEndOfString); err != nil {
+		return nil, err
+	}
 
 	return &Variable{
 		name:    name,
 		filters: filters,
+		markup:  markup,
 	}, nil
 }
 
