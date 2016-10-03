@@ -6,6 +6,17 @@ import (
 	"strconv"
 )
 
+// Expression objects contain specific types of usable data
+// that can be rendered to a string value at runtime.
+type Expression interface {
+	// Evaluate with the supplied Context
+	// XXX: not so certain this is actually necessary, will need to review once
+	// more non-primitives have been implemented
+	Evaluate(Context) Expression
+	// Name might be better as a helper method that switches on type
+	Name() string
+}
+
 // Define some constant literals
 var (
 	Nil   = nilExpr{}
@@ -76,65 +87,54 @@ func ParseExpression(markup string) Expression {
 	return ParseVariableLookup(markup)
 }
 
-// Expression objects contain specific types of usable data
-// that can be rendered to a string value at runtime.
-type Expression interface {
-	Render(Vars) string
-	// Name might be better as a helper method that switches on type
-	Name() string
-}
-
 // Base expression types
 
 type nilExpr struct{}
 
-func (e nilExpr) Render(v Vars) string { return "nil" }
+func (e nilExpr) Evaluate(c Context) Expression { return e }
 
 func (e nilExpr) Name() string {
-	return e.Render(nil)
+	return "nil"
 }
 
 type boolExpr bool
 
-func (e boolExpr) Render(v Vars) string {
-	if e {
-		return "true"
-	}
-	return "false"
+func (e boolExpr) Evaluate(c Context) Expression {
+	return e
 }
 
 func (e boolExpr) Name() string {
-	return e.Render(nil)
+	return fmt.Sprintf("%v", e)
 }
 
 type stringExpr string
 
-func (e stringExpr) Render(v Vars) string {
-	return string(e)
+func (e stringExpr) Evaluate(c Context) Expression {
+	return e
 }
 
 func (e stringExpr) Name() string {
-	return e.Render(nil)
+	return string(e)
 }
 
 type integerExpr int
 
-func (e integerExpr) Render(v Vars) string {
-	return strconv.Itoa(int(e))
+func (e integerExpr) Evaluate(c Context) Expression {
+	return e
 }
 
 func (e integerExpr) Name() string {
-	return e.Render(nil)
+	return strconv.Itoa(int(e))
 }
 
 type floatExpr float64
 
-func (f floatExpr) Render(v Vars) string {
-	return strconv.FormatFloat(float64(f), 'f', 2, 64)
+func (e floatExpr) Evaluate(c Context) Expression {
+	return e
 }
 
-func (f floatExpr) Name() string {
-	return f.Render(nil)
+func (e floatExpr) Name() string {
+	return strconv.FormatFloat(float64(e), 'f', 2, 64)
 }
 
 type rangeExpr struct {
@@ -142,21 +142,32 @@ type rangeExpr struct {
 	end   int
 }
 
-func (e rangeExpr) Render(v Vars) string {
-	return fmt.Sprintf("%v..%v", e.start, e.end)
+func (e rangeExpr) Evaluate(c Context) Expression {
+	panic("nope")
+	return e
 }
 
 func (e rangeExpr) Name() string {
-	return e.Render(nil)
+	return fmt.Sprintf("%v..%v", e.start, e.end)
 }
 
 // literalExpr acts like an atom
 type literalExpr string
 
-func (e literalExpr) Render(v Vars) string {
-	return string(e)
+func (e literalExpr) Evaluate(c Context) Expression {
+	return e
 }
 
 func (e literalExpr) Name() string {
 	return string(e)
+}
+
+type arrayExpr []interface{}
+
+func (e arrayExpr) Evaluate(c Context) Expression {
+	return e
+}
+
+func (e arrayExpr) Name() string {
+	return "some array, dunno lol"
 }

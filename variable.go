@@ -22,6 +22,14 @@ type Variable struct {
 	markup  string
 }
 
+func (v *Variable) Render(vars Vars) (string, error) {
+	panic("unimplemented")
+}
+
+func (v *Variable) Blank() bool {
+	panic("unimplemented")
+}
+
 // Filter is used to modify a Variable using the
 // liquid pipe syntax "x | f1 | f2"
 type Filter struct {

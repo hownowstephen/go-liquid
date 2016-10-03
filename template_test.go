@@ -23,7 +23,7 @@ func TestBlankSpace(t *testing.T) {
 
 func TestVariableBeginning(t *testing.T) {
 	checkTemplate(t, "{{funk}}  ", []Node{
-		node{value: "{{funk}}"},
+		testVariableNode("funk"),
 		stringNode("  "),
 	})
 
@@ -34,7 +34,7 @@ func TestVariableBeginning(t *testing.T) {
 func TestVariableEnd(t *testing.T) {
 	checkTemplate(t, "  {{funk}}", []Node{
 		stringNode("  "),
-		node{value: "{{funk}}"},
+		testVariableNode("funk"),
 	})
 
 	//     assert_equal String, template.root.nodelist[0].class
@@ -44,7 +44,7 @@ func TestVariableEnd(t *testing.T) {
 func TestVariableMiddle(t *testing.T) {
 	checkTemplate(t, "  {{funk}}  ", []Node{
 		stringNode("  "),
-		node{value: "{{funk}}"},
+		testVariableNode("funk"),
 		stringNode("  "),
 	})
 	//     assert_equal String, template.root.nodelist[0].class
@@ -55,11 +55,11 @@ func TestVariableMiddle(t *testing.T) {
 func TestVariableManyEmbeddedFragments(t *testing.T) {
 	checkTemplate(t, "  {{funk}} {{so}} {{brother}} ", []Node{
 		stringNode("  "),
-		node{value: "{{funk}}"},
+		testVariableNode("funk"),
 		stringNode(" "),
-		node{value: "{{so}}"},
+		testVariableNode("so"),
 		stringNode(" "),
-		node{value: "{{brother}}"},
+		testVariableNode("brother"),
 		stringNode(" "),
 	})
 	//     assert_equal [String, Variable, String, Variable, String, Variable, String],
@@ -69,11 +69,10 @@ func TestVariableManyEmbeddedFragments(t *testing.T) {
 func TestWithBlock(t *testing.T) {
 	checkTemplate(t, `  {% comment %} {% endcomment %} `, []Node{
 		stringNode("  "),
-		node{nodelist: []Node{
-			node{value: "{% comment %}"},
-			stringNode(" "),
-			node{value: "{% endcomment %}"},
-		}},
+		blockNode{
+			tag:   "comment",
+			nodes: []Node{stringNode(" ")},
+		},
 		stringNode(" "),
 	})
 }
@@ -81,12 +80,17 @@ func TestWithBlock(t *testing.T) {
 func TestWithCustomTag(t *testing.T) {
 	RegisterTag("testtag", &commentTag{})
 	checkTemplate(t, `{% testtag %} {% endtesttag %}`, []Node{
-		node{
-			nodelist: []Node{
-				node{value: "{% testtag %}"},
-				stringNode(" "),
-				node{value: "{% endtesttag %}"},
-			},
+		blockNode{
+			tag:   "testtag",
+			nodes: []Node{stringNode(" ")},
 		},
 	})
+}
+
+func testVariableNode(v string) Node {
+	variable, err := CreateVariable(v)
+	if err != nil {
+		return nil
+	}
+	return variable
 }

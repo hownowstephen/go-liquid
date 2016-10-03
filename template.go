@@ -19,10 +19,15 @@ const (
 	varStartToken = "{{"
 )
 
+// Template is a parsed liquid string containing a list
+// of nodes that can be used to render an output
 type Template struct {
 	nodes []Node
 }
 
+// Node must be implemented by all parts of a template, and
+// provides the necessary rendering handlers to allow generating
+// a final output
 type Node interface {
 	Render(Vars) (string, error)
 	Blank() bool
@@ -38,27 +43,15 @@ func (n stringNode) Blank() bool {
 	return n == ""
 }
 
-type node struct {
-	value    string
-	nodelist []Node
-}
-
-func (n node) Blank() bool {
-	return false
-}
-
-func (n node) Render(vars Vars) (string, error) {
-	return n.value, nil
-}
-
 // Tag implements a parsing interface for generating liquid nodes
 type Tag interface {
-	Parse(name, markup string, tokenizer *Tokenizer, ctx *parseContext) node
+	Parse(name, markup string, tokenizer *Tokenizer, ctx *parseContext) Node
 }
 
+// An example tag
 type commentTag struct{}
 
-func (t *commentTag) Parse(name, markup string, tokenizer *Tokenizer, ctx *parseContext) node {
+func (t *commentTag) Parse(name, markup string, tokenizer *Tokenizer, ctx *parseContext) Node {
 
 	subctx := &parseContext{
 		line: ctx.line,
@@ -72,19 +65,10 @@ func (t *commentTag) Parse(name, markup string, tokenizer *Tokenizer, ctx *parse
 
 	ctx.line = subctx.line
 
-	// body.parse(tokens, parse_context) do |end_tag_name, end_tag_params|
-	//     @blank &&= body.blank?
-
-	//     return false if end_tag_name == block_delimiter
-	//     unless end_tag_name
-	//       raise SyntaxError.new(parse_context.locale.t("errors.syntax.tag_never_closed".freeze, block_name: block_name))
-	//     end
-
-	//     # this tag is not registered with the system
-	//     # pass it to the current block for special handling or error reporting
-	//     unknown_tag(end_tag_name, end_tag_params, tokens)
-	//   end
-	return node{"", append([]Node{node{value: markup}}, nodelist...)}
+	return blockNode{
+		tag:   name,
+		nodes: nodelist,
+	}
 }
 
 // RegisterTag registers a new tag (big surprise)
@@ -132,7 +116,7 @@ func tokensToNodeList(tokenizer *Tokenizer, ctx *parseContext) ([]Node, error) {
 					if tagName != ctx.end {
 						err = LiquidError(fmt.Sprintf("Unexpected end tag: %v, %v", tagName, markup), ctx)
 					}
-					return append(nodeList, node{value: markup}), err
+					return nodeList, err
 				} else if tag := RegisteredTags[tagName]; tag != nil {
 					newTag := tag.Parse(tagName, markup, tokenizer, ctx)
 					blank = blank && newTag.Blank()
@@ -163,14 +147,13 @@ func ParseTemplate(template string) (*Template, error) {
 
 	// tokenize the source
 	tokenizer := NewTokenizer(template)
-	// TODO: this strips out the values being split on, but we need those!
 	ctx := &parseContext{line: 0}
-
 	nodeList, err := tokensToNodeList(tokenizer, ctx)
 
 	return &Template{nodeList}, err
 }
 
+// Render the template with the supplied variables
 func (t *Template) Render(vars Vars) (string, error) {
 	if len(t.nodes) == 0 || t.nodes[0].Blank() {
 		return "", nil
@@ -199,9 +182,27 @@ func (t *Template) Render(vars Vars) (string, error) {
 //       raise_missing_variable_terminator(token, parse_context)
 //     end
 
-func createVariable(token string, ctx *parseContext) node {
+func createVariable(token string, ctx *parseContext) Node {
 	parsed := contentOfVariableRegexp.FindStringSubmatch(token)
-	return node{value: parsed[0]}
+
+	v, err := CreateVariable(parsed[1])
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+type blockNode struct {
+	tag   string
+	nodes []Node
+}
+
+func (n blockNode) Render(v Vars) (string, error) {
+	panic("unimplemented")
+}
+
+func (n blockNode) Blank() bool {
+	return len(n.nodes) == 0
 }
 
 //     def raise_missing_tag_terminator(token, parse_context)
