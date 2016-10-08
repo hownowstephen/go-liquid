@@ -152,63 +152,126 @@ func TestContainsWorksOnArrays(t *testing.T) {
 	}
 }
 
-//   def test_contains_works_on_arrays
-//     @context = Liquid::Context.new
-//     @context['array'] = [1, 2, 3, 4, 5]
-//     array_expr = VariableLookup.new("array")
+func TestContainsReturnsFalseForNilOperands(t *testing.T) {
+	ctx := Context{}
 
-//     assert_evalutes_false array_expr, 'contains', 0
-//     assert_evalutes_true array_expr, 'contains', 1
-//     assert_evalutes_true array_expr, 'contains', 2
-//     assert_evalutes_true array_expr, 'contains', 3
-//     assert_evalutes_true array_expr, 'contains', 4
-//     assert_evalutes_true array_expr, 'contains', 5
-//     assert_evalutes_false array_expr, 'contains', 6
-//     assert_evalutes_false array_expr, 'contains', "1"
-//   end
+	if err := checkConditionContext(t, ParseVariableLookup("not_assigned"), "contains", stringExpr("0"), false, ctx); err != nil {
+		t.Errorf("expected false, got: %v", err)
+	}
 
-//   def test_contains_returns_false_for_nil_operands
-//     @context = Liquid::Context.new
-//     assert_evalutes_false VariableLookup.new('not_assigned'), 'contains', '0'
-//     assert_evalutes_false 0, 'contains', VariableLookup.new('not_assigned')
-//   end
+	if err := checkConditionContext(t, integerExpr(0), "contains", ParseVariableLookup("not_assigned"), false, ctx); err != nil {
+		t.Errorf("expected false, got: %v", err)
+	}
+}
 
-//   def test_contains_return_false_on_wrong_data_type
-//     assert_evalutes_false 1, 'contains', 0
-//   end
+func TestContainsReturnsFalseOnWrongDataType(t *testing.T) {
+	if err := checkCondition(t, integerExpr(1), "contains", integerExpr(0), false); err != nil {
+		t.Errorf("expected false, got: %v", err)
+	}
+}
 
-//   def test_contains_with_string_left_operand_coerces_right_operand_to_string
-//     assert_evalutes_true ' 1 ', 'contains', 1
-//     assert_evalutes_false ' 1 ', 'contains', 2
-//   end
+func TestContainsWithStringLeftOperandCoercesRightOperandToString(t *testing.T) {
+	if err := checkCondition(t, stringExpr(` 1 `), "contains", integerExpr(1), true); err != nil {
+		t.Errorf("expected true, got: %v", err)
+	}
+	if err := checkCondition(t, stringExpr(` 1 `), "contains", integerExpr(2), false); err != nil {
+		t.Errorf("expected false, got: %v", err)
+	}
+}
 
-//   def test_or_condition
-//     condition = Condition.new(1, '==', 2)
+func TestOrCondition(t *testing.T) {
+	cond, err := NewCondition(integerExpr(1), "==", integerExpr(2))
+	if err != nil {
+		t.Error(err)
+		return
+	}
 
-//     assert_equal false, condition.evaluate
+	got, err := cond.Evaluate(Context{})
+	if err != nil {
+		t.Error(err)
+		return
+	}
 
-//     condition.or Condition.new(2, '==', 1)
+	if got != false {
+		t.Errorf("condition evaluated wrong, want: false, got: %v", got)
+	}
 
-//     assert_equal false, condition.evaluate
+	if err := cond.Or(integerExpr(2), "==", integerExpr(1)); err != nil {
+		t.Errorf("error adding OR condition: %v", err)
+	}
 
-//     condition.or Condition.new(1, '==', 1)
+	got, err = cond.Evaluate(Context{})
+	if err != nil {
+		t.Error(err)
+		return
+	}
 
-//     assert_equal true, condition.evaluate
-//   end
+	if got != false {
+		t.Errorf("condition evaluated wrong, want: false, got: %v", got)
+	}
 
-//   def test_and_condition
-//     condition = Condition.new(1, '==', 1)
+	if err := cond.Or(integerExpr(1), "==", integerExpr(1)); err != nil {
+		t.Errorf("error adding OR condition: %v", err)
+	}
 
-//     assert_equal true, condition.evaluate
+	got, err = cond.Evaluate(Context{})
+	if err != nil {
+		t.Error(err)
+		return
+	}
 
-//     condition.and Condition.new(2, '==', 2)
+	if got != true {
+		t.Errorf("condition evaluated wrong, want: true, got: %v", got)
+	}
 
-//     assert_equal true, condition.evaluate
+}
 
-//     condition.and Condition.new(2, '==', 1)
+func TestAndCondition(t *testing.T) {
+	cond, err := NewCondition(integerExpr(1), "==", integerExpr(1))
+	if err != nil {
+		t.Error(err)
+		return
+	}
 
-//     assert_equal false, condition.evaluate
-//   end
+	got, err := cond.Evaluate(Context{})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if got != true {
+		t.Errorf("condition evaluated wrong, want: true, got: %v", got)
+	}
+
+	if err := cond.And(integerExpr(2), "==", integerExpr(2)); err != nil {
+		t.Errorf("error adding OR condition: %v", err)
+	}
+
+	got, err = cond.Evaluate(Context{})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if got != true {
+		t.Errorf("condition evaluated wrong, want: true, got: %v", got)
+	}
+
+	if err := cond.And(integerExpr(1), "==", integerExpr(2)); err != nil {
+		t.Errorf("error adding OR condition: %v", err)
+	}
+
+	got, err = cond.Evaluate(Context{})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if got != false {
+		t.Errorf("condition evaluated wrong, want: false, got: %v", got)
+	}
+
+}
 
 //   def test_should_allow_custom_proc_operator
 //     Condition.operators['starts_with'] = proc { |cond, left, right| left =~ %r{^#{right}} }

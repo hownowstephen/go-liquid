@@ -25,11 +25,55 @@ type Condition struct {
 	a        Expression
 	operator operator
 	b        Expression
+	or       []*Condition
+	and      []*Condition
 }
 
 // Evaluate the supplied condition
-func (c Condition) Evaluate(ctx Context) (bool, error) {
-	return c.operator(c.a.Evaluate(ctx), c.b.Evaluate(ctx))
+func (c *Condition) Evaluate(ctx Context) (bool, error) {
+	result, err := c.operator(c.a.Evaluate(ctx), c.b.Evaluate(ctx))
+	if err != nil {
+		return false, err
+	}
+
+	for _, or := range c.or {
+		if result {
+			break
+		}
+		sub, err := or.Evaluate(ctx)
+		if err != nil {
+			return false, err
+		}
+		result = result || sub
+	}
+
+	for _, and := range c.and {
+		sub, err := and.Evaluate(ctx)
+		if err != nil {
+			return false, err
+		}
+		result = result && sub
+	}
+
+	return result, nil
+}
+
+func (c *Condition) Or(op1 Expression, operator string, op2 Expression) error {
+	orCondition, err := NewCondition(op1, operator, op2)
+	if err != nil {
+		return err
+	}
+	c.or = append(c.or, orCondition)
+	return nil
+}
+
+func (c *Condition) And(op1 Expression, operator string, op2 Expression) error {
+	andCondition, err := NewCondition(op1, operator, op2)
+	if err != nil {
+		return err
+	}
+	c.and = append(c.and, andCondition)
+	return nil
 }
 
 type operator func(a, b Expression) (bool, error)
@@ -85,7 +129,7 @@ func contains(a, b Expression) (bool, error) {
 		return strings.Contains(string(a.(stringExpr)), fmt.Sprintf("%v", b)), nil
 	}
 
-	return false, fmt.Errorf("unimplemented")
+	return false, nil
 }
 
 var operators = map[string]operator{
@@ -112,7 +156,7 @@ var operators = map[string]operator{
 func NewCondition(op1 Expression, operator string, op2 Expression) (*Condition, error) {
 
 	if found, ok := operators[operator]; ok {
-		return &Condition{op1, found, op2}, nil
+		return &Condition{a: op1, operator: found, b: op2}, nil
 	}
 
 	//       # If the operator is empty this means that the decision statement is just
