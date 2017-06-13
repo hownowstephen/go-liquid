@@ -26,9 +26,6 @@ func TestVariableBeginning(t *testing.T) {
 		testVariableNode("funk"),
 		stringNode("  "),
 	})
-
-	//     assert_equal Variable, template.root.nodelist[0].class
-	//     assert_equal String, template.root.nodelist[1].class
 }
 
 func TestVariableEnd(t *testing.T) {
@@ -36,9 +33,6 @@ func TestVariableEnd(t *testing.T) {
 		stringNode("  "),
 		testVariableNode("funk"),
 	})
-
-	//     assert_equal String, template.root.nodelist[0].class
-	//     assert_equal Variable, template.root.nodelist[1].class
 }
 
 func TestVariableMiddle(t *testing.T) {
@@ -47,9 +41,6 @@ func TestVariableMiddle(t *testing.T) {
 		testVariableNode("funk"),
 		stringNode("  "),
 	})
-	//     assert_equal String, template.root.nodelist[0].class
-	//     assert_equal Variable, template.root.nodelist[1].class
-	//     assert_equal String, template.root.nodelist[2].class
 }
 
 func TestVariableManyEmbeddedFragments(t *testing.T) {
@@ -62,8 +53,6 @@ func TestVariableManyEmbeddedFragments(t *testing.T) {
 		testVariableNode("brother"),
 		stringNode(" "),
 	})
-	//     assert_equal [String, Variable, String, Variable, String, Variable, String],
-	//       block_types(template.root.nodelist)
 }
 
 func TestWithBlock(t *testing.T) {

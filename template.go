@@ -117,18 +117,19 @@ func tokensToNodeList(tokenizer *Tokenizer, ctx *parseContext) ([]Node, error) {
 						err = LiquidError(fmt.Sprintf("Unexpected end tag: %v, %v", tagName, markup), ctx)
 					}
 					return nodeList, err
-				} else if tag := RegisteredTags[tagName]; tag != nil {
+				} else if tag, ok := RegisteredTags[tagName]; ok {
 					newTag := tag.Parse(tagName, markup, tokenizer, ctx)
 					blank = blank && newTag.Blank()
 					nodeList = append(nodeList, newTag)
+				} else if tagName == "else" || tagName == "end" {
+					return nil, ErrSyntax("Unexpected outer 'else' tag")
 				} else {
-					// @TODO: Liquid returns the value instead. why?
-					// return yield tag_name, markup
-					return nil, LiquidError(fmt.Sprintf("Unknown tag: %v, %v", tagName, markup), ctx)
+					return nil, ErrSyntax(fmt.Sprintf("Unknown tag '%v'", tagName))
 				}
 			} else {
 				return nil, LiquidError(fmt.Sprintf("Missing tag terminator: %v", token), ctx)
 			}
+
 		case strings.HasPrefix(token, varStartToken):
 			nodeList = append(nodeList, createVariable(token, ctx))
 			blank = false

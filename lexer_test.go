@@ -89,6 +89,6 @@ func TestWhitespace(t *testing.T) {
 
 func TestUnexpectedCharacter(t *testing.T) {
 	if _, err := Lexer("%"); err == nil {
-		t.Errorf("Should raise an error for '%'")
+		t.Error("Should raise an error for '%'")
 	}
 }

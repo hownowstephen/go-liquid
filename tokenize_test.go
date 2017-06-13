@@ -44,6 +44,7 @@ func TestTokenizeBlocks(t *testing.T) {
 	checkTokens(t, " {% comment %} {% endcomment %} ", []string{" ", "{% comment %}", " ", "{% endcomment %}", " "})
 }
 func TestCalculateLineNumbersPerTokenWithProfiling(t *testing.T) {
+	t.Skip("line numbers not implemented")
 	//     assert_equal [1],       tokenize_line_numbers("{{funk}}")
 	//     assert_equal [1, 1, 1], tokenize_line_numbers(" {{funk}} ")
 	//     assert_equal [1, 2, 2], tokenize_line_numbers("\n{{funk}}\n")

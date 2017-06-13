@@ -5,6 +5,12 @@ import (
 	"fmt"
 )
 
+type ErrSyntax string
+
+func (e ErrSyntax) Error() string {
+	return fmt.Sprintf("Liquid syntax error: %v", string(e))
+}
+
 type liquidContext interface {
 	String() string
 }

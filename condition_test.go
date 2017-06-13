@@ -273,37 +273,24 @@ func TestAndCondition(t *testing.T) {
 
 }
 
-//   def test_should_allow_custom_proc_operator
-//     Condition.operators['starts_with'] = proc { |cond, left, right| left =~ %r{^#{right}} }
+func TestShouldAllowCustomProcOperator(t *testing.T) {
+	t.Skip("unimplemented")
+	//   def test_should_allow_custom_proc_operator
+	//     Condition.operators['starts_with'] = proc { |cond, left, right| left =~ %r{^#{right}} }
 
-//     assert_evalutes_true 'bob', 'starts_with', 'b'
-//     assert_evalutes_false 'bob', 'starts_with', 'o'
-//   ensure
-//     Condition.operators.delete 'starts_with'
-//   end
+	//     assert_evalutes_true 'bob', 'starts_with', 'b'
+	//     assert_evalutes_false 'bob', 'starts_with', 'o'
+	//   ensure
+	//     Condition.operators.delete 'starts_with'
+	//   end
+}
 
-//   def test_left_or_right_may_contain_operators
-//     @context = Liquid::Context.new
-//     @context['one'] = @context['another'] = "gnomeslab-and-or-liquid"
+func TestLeftOrRightMayContainOperators(t *testing.T) {
+	t.Skip("unimplemented")
+	//   def test_left_or_right_may_contain_operators
+	//     @context = Liquid::Context.new
+	//     @context['one'] = @context['another'] = "gnomeslab-and-or-liquid"
 
-//     assert_evalutes_true VariableLookup.new("one"), '==', VariableLookup.new("another")
-//   end
-
-//   private
-
-//   def assert_evalutes_true(left, op, right)
-//     assert Condition.new(left, op, right).evaluate(@context || Liquid::Context.new),
-//       "Evaluated false: #{left} #{op} #{right}"
-//   end
-
-//   def assert_evalutes_false(left, op, right)
-//     assert !Condition.new(left, op, right).evaluate(@context || Liquid::Context.new),
-//       "Evaluated true: #{left} #{op} #{right}"
-//   end
-
-//   def assert_evaluates_argument_error(left, op, right)
-//     assert_raises(Liquid::ArgumentError) do
-//       Condition.new(left, op, right).evaluate(@context || Liquid::Context.new)
-//     end
-//   end
-// end # ConditionTest
+	//     assert_evalutes_true VariableLookup.new("one"), '==', VariableLookup.new("another")
+	//   end
+}
