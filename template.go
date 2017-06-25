@@ -43,45 +43,6 @@ func (n stringNode) Blank() bool {
 	return n == ""
 }
 
-// Tag implements a parsing interface for generating liquid nodes
-type Tag interface {
-	Parse(name, markup string, tokenizer *Tokenizer, ctx *parseContext) Node
-}
-
-// An example tag
-type commentTag struct{}
-
-func (t *commentTag) Parse(name, markup string, tokenizer *Tokenizer, ctx *parseContext) Node {
-
-	subctx := &parseContext{
-		line: ctx.line,
-		end:  fmt.Sprintf("end%v", name),
-	}
-
-	nodelist, err := tokensToNodeList(tokenizer, subctx)
-	if err != nil {
-		panic(err)
-	}
-
-	ctx.line = subctx.line
-
-	return blockNode{
-		tag:   name,
-		nodes: nodelist,
-	}
-}
-
-// RegisterTag registers a new tag (big surprise)
-// and probably needs a mutex?
-func RegisterTag(name string, tag Tag) {
-	RegisteredTags[name] = tag
-}
-
-// RegisteredTags are all known tags
-var RegisteredTags = map[string]Tag{
-	"comment": &commentTag{},
-}
-
 type parseContext struct {
 	line int
 	end  string
@@ -160,8 +121,16 @@ func (t *Template) Render(vars Vars) (string, error) {
 		return "", nil
 	}
 
-	// Obviously we need to actually render the rest of the nodes.
-	return t.nodes[0].Render(vars)
+	// XXX: look at how this gets done in the liquid code, this is provisional
+	var out string
+	for _, node := range t.nodes {
+		r, err := node.Render(vars)
+		if err != nil {
+			return "", err
+		}
+		out += r
+	}
+	return out, nil
 }
 
 //     def render_node(node, context)
@@ -199,7 +168,16 @@ type blockNode struct {
 }
 
 func (n blockNode) Render(v Vars) (string, error) {
-	panic("unimplemented")
+	// XXX: fixme, this is provisional while I get a handle on interfaces
+	var out string
+	for _, node := range n.nodes {
+		r, err := node.Render(v)
+		if err != nil {
+			return "", err
+		}
+		out += r
+	}
+	return out, nil
 }
 
 func (n blockNode) Blank() bool {

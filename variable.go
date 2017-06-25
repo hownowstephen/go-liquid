@@ -23,7 +23,7 @@ type Variable struct {
 }
 
 func (v *Variable) Render(vars Vars) (string, error) {
-	panic("unimplemented")
+	return "VARIABLE_RENDER_UNIMPLEMENTED", nil
 }
 
 func (v *Variable) Blank() bool {
