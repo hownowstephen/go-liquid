@@ -1,6 +1,7 @@
 package liquid
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 )
@@ -12,7 +13,14 @@ var (
 // Vars get passed in the render step of a request
 // and contain values and context information for the input
 // variables of the request
-type Vars map[string]interface{}
+// XXX: Vars is the wrong name
+type Vars struct {
+	v map[string]interface{}
+}
+
+func (v Vars) Set(key string, value interface{}) {
+	v.v[key] = value
+}
 
 // Variable is a single liquid variable expression
 // and any associated filters
@@ -22,8 +30,27 @@ type Variable struct {
 	markup  string
 }
 
-func (v *Variable) Render(vars Vars) (string, error) {
-	return "VARIABLE_RENDER_UNIMPLEMENTED", nil
+func (v *Variable) Render(vars *Vars) (string, error) {
+
+	fmt.Println("WIP: filters not implemented")
+	if len(v.filters) > 0 {
+		panic("DUNNO FILTERS LOL")
+	}
+
+	expr := v.name.Evaluate(Context{vars: vars})
+
+	switch expr.(type) {
+	case stringExpr:
+		return string(expr.(stringExpr)), nil
+	default:
+		return "", errors.New("LOLWUT")
+	}
+
+	if value, ok := vars.v[v.name.Name()]; ok {
+		return fmt.Sprint(value), nil
+	}
+
+	return "", ErrNotFound(v.name.Name())
 }
 
 func (v *Variable) Blank() bool {

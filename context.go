@@ -3,7 +3,7 @@ package liquid
 import "fmt"
 
 type Context struct {
-	vars Vars
+	vars *Vars
 }
 
 func interfaceToExpression(v interface{}) Expression {
@@ -32,7 +32,14 @@ func (c *Context) FindVariable(e Expression) (Expression, error) {
 		return nil, fmt.Errorf("DUNNO WHAT TO DO WITH %v OMG", e)
 	}
 
-	if value, ok := c.vars[key]; ok {
+	// XXX: Provisional, just trying things out
+	if c.vars == nil {
+		c.vars = &Vars{
+			v: map[string]interface{}{},
+		}
+	}
+
+	if value, ok := c.vars.v[key]; ok {
 		// XXX: assumes flat variable structure. wrong
 		return interfaceToExpression(value), nil
 	}

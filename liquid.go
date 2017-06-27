@@ -12,7 +12,7 @@ var (
 	filterSeparatorRegexp       = regexp.MustCompile(`\|`)
 	tagStartRegexp              = regexp.MustCompile(`\{\%`)
 	tagEndRegexp                = regexp.MustCompile(`\%\}`)
-	variableSignatureRegexp     = regexp.MustCompile(`\(?[\w\-\.\[\]]\)?`)
+	variableSignatureRegexp     = regexp.MustCompile(`\(?[\w\-\.\[\]]+\)?`)
 	variableSegmentRegexp       = regexp.MustCompile(`[\w\-]`)
 	variableStartRegexp         = regexp.MustCompile(`\{\{`)
 	variableEndRegexp           = regexp.MustCompile(`\}\}`)

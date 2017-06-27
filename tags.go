@@ -4,29 +4,30 @@ import "fmt"
 import "regexp"
 
 // Tag implements a parsing interface for generating liquid nodes
-type Tag interface {
-	Parse(name, markup string, tokenizer *Tokenizer, ctx *parseContext) Node
-}
+type Tag func(name, markup string, tokenizer *Tokenizer, ctx *parseContext) Node
 
 // RegisterTag registers a new tag (big surprise)
 // XXX: mutex me
 func RegisterTag(name string, tag Tag) {
-	RegisteredTags[name] = tag
+	registeredTags[name] = tag
 }
 
-// RegisteredTags are all known tags
+func GetTag(name string) (Tag, bool) {
+	if t, ok := registeredTags[name]; ok {
+		return t, true
+	}
+	return nil, false
+}
+
+// registeredTags are all known tags
 // XXX: do this better
-var RegisteredTags = map[string]Tag{
-	"comment": &commentTag{},
-	"assign": &assignTag{
-		syntax: regexp.MustCompile(fmt.Sprintf(`(?ms)(%v)\s*=\s*(.*)\s*`, variableSignatureRegexp.String())),
-	},
+var registeredTags = map[string]Tag{
+	"comment": commentTag,
+	"assign":  assignTag,
 }
 
-// An example tag
-type commentTag struct{}
-
-func (t *commentTag) Parse(name, markup string, tokenizer *Tokenizer, ctx *parseContext) Node {
+// CommentTag handles {% comment %} [..] {% endcomment %} blocks
+func commentTag(name, markup string, tokenizer *Tokenizer, ctx *parseContext) Node {
 
 	subctx := &parseContext{
 		line: ctx.line,
@@ -46,35 +47,45 @@ func (t *commentTag) Parse(name, markup string, tokenizer *Tokenizer, ctx *parse
 	}
 }
 
-type assignTag struct {
-	syntax *regexp.Regexp
-	to     string
-	from   *VariableLookup
-}
+var assignSyntax = regexp.MustCompile(fmt.Sprintf(`(?ms)(%v)\s*=\s*(.*)\s*`, variableSignatureRegexp.String()))
 
-func (t *assignTag) Parse(name, markup string, tokenizer *Tokenizer, ctx *parseContext) Node {
-	fmt.Println(name, markup)
+func assignTag(name, markup string, tokenizer *Tokenizer, ctx *parseContext) Node {
 
-	if submatches := t.syntax.FindAllStringSubmatch(markup, -1); len(submatches) > 0 {
-		fmt.Println(submatches, len(submatches))
+	if submatches := assignSyntax.FindAllStringSubmatch(markup[2:len(markup)-2], -1); len(submatches) > 0 {
 
-		t.to = submatches[0][1]
-		t.from = ParseVariableLookup(submatches[0][2])
+		v, err := CreateVariable(submatches[0][2])
+		if err != nil {
+			panic(err)
+		}
 
 		// XXX: Tag shouldn't be an interface like this requiring a struct
 		// it should just be a func that returns a Node
-		return t
+		return assignNode{
+			to:   submatches[0][1],
+			from: v,
+		}
 	}
 
 	// localized syntax error
 	panic(ErrSyntax("errors.syntax.assign"))
 }
 
-func (t *assignTag) Render(v Vars) (string, error) {
-	fmt.Println("DOIN A RENDER")
-	return "POTATO", nil
+type assignNode struct {
+	to   string
+	from *Variable
 }
 
-func (t *assignTag) Blank() bool {
-	return false
+func (t assignNode) Render(v *Vars) (string, error) {
+	expr, err := t.from.Render(v)
+	if err != nil {
+		return "", err
+	}
+	v.v[t.to] = expr
+
+	// assign tags leave no trace
+	return "", nil
+}
+
+func (t assignNode) Blank() bool {
+	return true
 }

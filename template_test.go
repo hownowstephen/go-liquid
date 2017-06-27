@@ -67,7 +67,7 @@ func TestWithBlock(t *testing.T) {
 }
 
 func TestWithCustomTag(t *testing.T) {
-	RegisterTag("testtag", &commentTag{})
+	RegisterTag("testtag", commentTag)
 	checkTemplate(t, `{% testtag %} {% endtesttag %}`, []Node{
 		blockNode{
 			tag:   "testtag",

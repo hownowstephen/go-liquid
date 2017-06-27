@@ -29,13 +29,13 @@ type Template struct {
 // provides the necessary rendering handlers to allow generating
 // a final output
 type Node interface {
-	Render(Vars) (string, error)
+	Render(*Vars) (string, error)
 	Blank() bool
 }
 
 type stringNode string
 
-func (n stringNode) Render(v Vars) (string, error) {
+func (n stringNode) Render(v *Vars) (string, error) {
 	return string(n), nil
 }
 
@@ -45,6 +45,7 @@ func (n stringNode) Blank() bool {
 
 type parseContext struct {
 	line int
+	tags map[string]Tag
 	end  string
 }
 
@@ -78,10 +79,10 @@ func tokensToNodeList(tokenizer *Tokenizer, ctx *parseContext) ([]Node, error) {
 						err = LiquidError(fmt.Sprintf("Unexpected end tag: %v, %v", tagName, markup), ctx)
 					}
 					return nodeList, err
-				} else if tag, ok := RegisteredTags[tagName]; ok {
-					newTag := tag.Parse(tagName, markup, tokenizer, ctx)
-					blank = blank && newTag.Blank()
-					nodeList = append(nodeList, newTag)
+				} else if nodeGenerator, ok := ctx.tags[tagName]; ok {
+					node := nodeGenerator(tagName, markup, tokenizer, ctx)
+					blank = blank && node.Blank()
+					nodeList = append(nodeList, node)
 				} else if tagName == "else" || tagName == "end" {
 					return nil, ErrSyntax("Unexpected outer 'else' tag")
 				} else {
@@ -109,16 +110,22 @@ func ParseTemplate(template string) (*Template, error) {
 
 	// tokenize the source
 	tokenizer := NewTokenizer(template)
-	ctx := &parseContext{line: 0}
+	ctx := &parseContext{line: 0, tags: registeredTags}
 	nodeList, err := tokensToNodeList(tokenizer, ctx)
 
 	return &Template{nodeList}, err
 }
 
 // Render the template with the supplied variables
-func (t *Template) Render(vars Vars) (string, error) {
+func (t *Template) Render(vars *Vars) (string, error) {
 	if len(t.nodes) == 0 || t.nodes[0].Blank() {
 		return "", nil
+	}
+
+	if vars == nil {
+		vars = &Vars{
+			v: map[string]interface{}{},
+		}
 	}
 
 	// XXX: look at how this gets done in the liquid code, this is provisional
@@ -167,7 +174,7 @@ type blockNode struct {
 	nodes []Node
 }
 
-func (n blockNode) Render(v Vars) (string, error) {
+func (n blockNode) Render(v *Vars) (string, error) {
 	// XXX: fixme, this is provisional while I get a handle on interfaces
 	var out string
 	for _, node := range n.nodes {

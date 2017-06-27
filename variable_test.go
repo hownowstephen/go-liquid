@@ -215,11 +215,15 @@ func TestVariableLookupInterface(t *testing.T) {
 	}
 }
 
-func checkTemplateRender(t *testing.T, template string, vars map[string]interface{}, want string) {
+func checkTemplateRender(t *testing.T, template string, v map[string]interface{}, want string) {
 	tpl, err := ParseTemplate(template)
 	if err != nil {
 		t.Errorf("Couldn't parse the template: %v", err)
 		return
+	}
+
+	vars := &Vars{
+		v: v,
 	}
 
 	if got, err := tpl.Render(vars); err == nil && got != want {
