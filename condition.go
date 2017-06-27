@@ -120,7 +120,11 @@ func contains(a, b Expression) (bool, error) {
 	switch a.(type) {
 	case arrayExpr:
 		for _, value := range a.(arrayExpr) {
-			if reflect.DeepEqual(interfaceToExpression(value), b) {
+			expr, err := interfaceToExpression(value)
+			if err != nil {
+				return false, err
+			}
+			if reflect.DeepEqual(expr, b) {
 				return true, nil
 			}
 		}

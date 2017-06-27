@@ -171,3 +171,14 @@ func (e arrayExpr) Evaluate(c Context) Expression {
 func (e arrayExpr) Name() string {
 	return "some array, dunno lol"
 }
+
+type mapExpr map[string]interface{}
+
+func (m mapExpr) Evaluate(c Context) Expression {
+	fmt.Println(c)
+	return m
+}
+
+func (m mapExpr) Name() string {
+	return "some map, dunno lol"
+}

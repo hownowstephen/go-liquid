@@ -235,51 +235,51 @@ func checkTemplateRender(t *testing.T, template string, v map[string]interface{}
 
 // Integration Tests
 
-// def test_simple_variable
-//     template = Template.parse(%({{test}}, true))
-//     assert_equal 'worked', template.render!('test' => 'worked')
-//     assert_equal 'worked wonderfully', template.render!('test' => 'worked wonderfully')
-//   end
+func TestSimpleVariable(t *testing.T) {
+	checkTemplateRender(t, "{{test}}", map[string]interface{}{"test": "worked"}, "worked")
+	checkTemplateRender(t, "{{test}}", map[string]interface{}{"test": "worked wonderfully"}, "worked wonderfully")
+}
 
 //   def test_variable_render_calls_to_liquid
 //     assert_template_result 'foobar', '{{ foo }}', 'foo' => ThingWithToLiquid.new
 //   end
 
-//   def test_simple_with_whitespaces
-//     template = Template.parse(%(  {{ test }}  ))
-//     assert_equal '  worked  ', template.render!('test' => 'worked')
-//     assert_equal '  worked wonderfully  ', template.render!('test' => 'worked wonderfully')
-//   end
+func TestSimpleWithWhitespaces(t *testing.T) {
+	checkTemplateRender(t, "  {{ test }}  ", map[string]interface{}{"test": "worked"}, "  worked  ")
+	checkTemplateRender(t, "  {{ test }}  ", map[string]interface{}{"test": "worked wonderfully"}, "  worked wonderfully  ")
+}
 
+// XXX: Lax parser mode not yet implemented
 //   def test_ignore_unknown
 //     template = Template.parse(%({{ test }}, true))
 //     assert_equal '', template.render!
 //   end
 
-//   def test_using_blank_as_variable_name
-//     template = Template.parse("{% assign foo = blank %}{{ foo }}")
-//     assert_equal '', template.render!
-//   end
+func TestUsingBlankAsVariableName(t *testing.T) {
+	checkTemplateRender(t, "{% assign foo = blank %}{{ foo }}", nil, "")
+}
 
-//   def test_using_empty_as_variable_name
-//     template = Template.parse("{% assign foo = empty %}{{ foo }}")
-//     assert_equal '', template.render!
-//   end
+func TestUsingEmptyAsVariableName(t *testing.T) {
+	checkTemplateRender(t, "{% assign foo = empty %}{{ foo }}", nil, "")
+}
 
-//   def test_hash_scoping
-//     template = Template.parse(%({{ test.test }}, true))
-//     assert_equal 'worked', template.render!('test' => { 'test' => 'worked' }, true)
-//   end
+func TestHashScoping(t *testing.T) {
+	checkTemplateRender(t, "{{ test.test }}", map[string]interface{}{
+		"test": map[string]interface{}{
+			"test": "worked",
+		},
+	}, "worked")
+}
 
-//   def test_false_renders_as_false
-//     assert_equal 'false', Template.parse("{{ foo }}").render!('foo' => false)
-//     assert_equal 'false', Template.parse("{{ false }}").render!
-//   end
+func TestFalseRendersAsFalse(t *testing.T) {
+	checkTemplateRender(t, "{{ foo }}", map[string]interface{}{"foo": false}, "false")
+	checkTemplateRender(t, "{{ false }}", nil, "false")
+}
 
-//   def test_nil_renders_as_empty_string
-//     assert_equal '', Template.parse("{{ nil }}").render!
-//     assert_equal 'cat', Template.parse("{{ nil | append: 'cat' }}").render!
-//   end
+func TestNilRendersAsEmptyString(t *testing.T) {
+	checkTemplateRender(t, "{{ nil }}", nil, "")
+	checkTemplateRender(t, "{{ nil | append: 'cat' }}", nil, "cat")
+}
 
 //   def test_preset_assigns
 //     template = Template.parse(%({{ test }}, true))

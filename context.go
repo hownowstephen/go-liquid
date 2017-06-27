@@ -6,18 +6,20 @@ type Context struct {
 	vars *Vars
 }
 
-func interfaceToExpression(v interface{}) Expression {
+func interfaceToExpression(v interface{}) (Expression, error) {
 	switch v.(type) {
 	case string:
-		return stringExpr(v.(string))
+		return stringExpr(v.(string)), nil
 	case int:
-		return integerExpr(v.(int))
+		return integerExpr(v.(int)), nil
 	case float64:
-		return floatExpr(v.(float64))
+		return floatExpr(v.(float64)), nil
 	case []interface{}:
-		return arrayExpr(v.([]interface{}))
+		return arrayExpr(v.([]interface{})), nil
+	case bool:
+		return boolExpr(v.(bool)), nil
 	}
-	panic(fmt.Sprintf("DONT UNDERSTAND %v"))
+	return nil, fmt.Errorf("DONT UNDERSTAND %v", v)
 }
 
 func (c *Context) FindVariable(e Expression) (Expression, error) {
@@ -41,7 +43,7 @@ func (c *Context) FindVariable(e Expression) (Expression, error) {
 
 	if value, ok := c.vars.v[key]; ok {
 		// XXX: assumes flat variable structure. wrong
-		return interfaceToExpression(value), nil
+		return interfaceToExpression(value)
 	}
 
 	return nil, ErrNotFound(key)

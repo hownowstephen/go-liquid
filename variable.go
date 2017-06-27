@@ -32,16 +32,29 @@ type Variable struct {
 
 func (v *Variable) Render(vars *Vars) (string, error) {
 
-	fmt.Println("WIP: filters not implemented")
-	if len(v.filters) > 0 {
-		panic("DUNNO FILTERS LOL")
+	result, err := v.renderBase(vars)
+	if err != nil {
+		return "", err
 	}
 
+	// for _, filter := range v.filters {
+	// 	result, err = filter.Apply(result)
+	// 	if err != nil {
+	// 		return "", err
+	// 	}
+	// }
+
+	return result, nil
+}
+
+func (v *Variable) renderBase(vars *Vars) (string, error) {
 	expr := v.name.Evaluate(Context{vars: vars})
 
 	switch expr.(type) {
 	case stringExpr:
 		return string(expr.(stringExpr)), nil
+	case boolExpr:
+		return fmt.Sprint(expr), nil
 	default:
 		return "", errors.New("LOLWUT")
 	}
@@ -54,7 +67,8 @@ func (v *Variable) Render(vars *Vars) (string, error) {
 }
 
 func (v *Variable) Blank() bool {
-	panic("unimplemented")
+	fmt.Println("XXX: implement Blank() for variables")
+	return false
 }
 
 // Filter is used to modify a Variable using the
