@@ -79,13 +79,13 @@ func tokensToNodeList(tokenizer *Tokenizer, ctx *parseContext) ([]Node, error) {
 						err = LiquidError(fmt.Sprintf("Unexpected end tag: %v, %v", tagName, markup), ctx)
 					}
 					return nodeList, err
+				} else if tagName == "else" || tagName == "end" {
+					return nil, ErrSyntax("Unexpected outer 'else' tag")
 				} else if nodeGenerator, ok := ctx.tags[tagName]; ok {
 					node := nodeGenerator(tagName, markup, tokenizer, ctx)
 					blank = blank && node.Blank()
 					nodeList = append(nodeList, node)
-				} else if tagName == "else" || tagName == "end" {
-					return nil, ErrSyntax("Unexpected outer 'else' tag")
-				} else {
+				} else if !ok {
 					return nil, ErrSyntax(fmt.Sprintf("Unknown tag '%v'", tagName))
 				}
 			} else {

@@ -22,12 +22,12 @@ func GetTag(name string) (Tag, bool) {
 // registeredTags are all known tags
 // XXX: do this better
 var registeredTags = map[string]Tag{
-	"comment": commentTag,
-	"assign":  assignTag,
+	"comment": NewCommentTag,
+	"assign":  NewAssignTag,
 }
 
-// CommentTag handles {% comment %} [..] {% endcomment %} blocks
-func commentTag(name, markup string, tokenizer *Tokenizer, ctx *parseContext) Node {
+// NewCommentTag handles {% comment %} [..] {% endcomment %} blocks
+func NewCommentTag(name, markup string, tokenizer *Tokenizer, ctx *parseContext) Node {
 
 	subctx := &parseContext{
 		line: ctx.line,
@@ -49,7 +49,7 @@ func commentTag(name, markup string, tokenizer *Tokenizer, ctx *parseContext) No
 
 var assignSyntax = regexp.MustCompile(fmt.Sprintf(`(?ms)(%v)\s*=\s*(.*)\s*`, variableSignatureRegexp.String()))
 
-func assignTag(name, markup string, tokenizer *Tokenizer, ctx *parseContext) Node {
+func NewAssignTag(name, markup string, tokenizer *Tokenizer, ctx *parseContext) Node {
 
 	if submatches := assignSyntax.FindAllStringSubmatch(markup[2:len(markup)-2], -1); len(submatches) > 0 {
 
@@ -58,9 +58,7 @@ func assignTag(name, markup string, tokenizer *Tokenizer, ctx *parseContext) Nod
 			panic(err)
 		}
 
-		// XXX: Tag shouldn't be an interface like this requiring a struct
-		// it should just be a func that returns a Node
-		return assignNode{
+		return AssignTag{
 			to:   submatches[0][1],
 			from: v,
 		}
@@ -70,12 +68,12 @@ func assignTag(name, markup string, tokenizer *Tokenizer, ctx *parseContext) Nod
 	panic(ErrSyntax("errors.syntax.assign"))
 }
 
-type assignNode struct {
+type AssignTag struct {
 	to   string
 	from *Variable
 }
 
-func (t assignNode) Render(v *Vars) (string, error) {
+func (t AssignTag) Render(v *Vars) (string, error) {
 	expr, err := t.from.Render(v)
 	if err != nil {
 		return "", err
@@ -86,6 +84,6 @@ func (t assignNode) Render(v *Vars) (string, error) {
 	return "", nil
 }
 
-func (t assignNode) Blank() bool {
+func (t AssignTag) Blank() bool {
 	return true
 }
