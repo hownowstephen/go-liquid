@@ -110,7 +110,35 @@ func TestAddItemInOuterScope(t *testing.T) {
 	if v != "test" {
 		t.Fatal(fmt.Sprintf(`Expected "test" but got %+v when looking up variable`, v))
 	}
+}
 
+func TestAddItemInInnerScope(t *testing.T) {
+	ctx := newContext()
+	ctx.scopes.push() // Pristine
+	ctx.scopes.push() // To be defiled with our variables
+
+	err := ctx.Assign("test", "test")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	v, err := ctx.Get("test")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	if v != "test" {
+		t.Fatal(fmt.Sprintf(`Expected "test" but got %+v when looking up variable`, v))
+	}
+
+	ctx.scopes.pop()
+
+	v, err = ctx.Get("test")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	if v != nil {
+		t.Fatal(fmt.Sprintf(`Got %+v from scope higher scope than it was defined in!`, v))
+	}
 }
 
 //scopeStack tests
