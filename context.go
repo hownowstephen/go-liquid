@@ -6,6 +6,19 @@ type Context struct {
 	vars Vars
 }
 
+func newContext() Context {
+	return Context{Vars{}}
+}
+
+func (c *Context) Assign(k string, v interface{}) {
+	//TODO: multiple stack handling
+	c.vars[k] = v
+}
+
+func (c *Context) Get(k string) interface{} {
+	return c.vars[k]
+}
+
 func interfaceToExpression(v interface{}) Expression {
 	switch v.(type) {
 	case string:
