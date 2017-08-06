@@ -5,6 +5,8 @@ import (
 	"fmt"
 )
 
+var ErrNoScope = errors.New(`No scopes to pop`)
+
 type Context struct {
 	scopes scopeStack
 }
@@ -25,7 +27,7 @@ func (c *Context) Assign(k string, v interface{}) error {
 
 func (c *Context) Get(k string) (interface{}, error) {
 	if len(c.scopes) < 1 {
-		return nil, errors.New(`No scopes to pop`)
+		return nil, ErrNoScope
 	}
 
 	var val interface{}
@@ -92,7 +94,7 @@ func (s *scopeStack) push() {
 func (s *scopeStack) pop() error {
 	l := len(*s)
 	if l < 1 {
-		return errors.New(`No scopes to pop`)
+		return ErrNoScope
 	}
 
 	*s = (*s)[:l-1]
@@ -102,7 +104,7 @@ func (s *scopeStack) pop() error {
 func (s *scopeStack) curr() (Vars, error) {
 	l := len(*s)
 	if l < 1 {
-		return nil, errors.New(`No scopes to pop`)
+		return nil, ErrNoScope
 	}
 
 	return (*s)[l-1], nil
