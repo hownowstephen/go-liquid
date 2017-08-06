@@ -1,22 +1,36 @@
 package liquid
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 type Context struct {
-	scopes []Vars
+	scopes scopeStack
 }
 
 func newContext() Context {
-	return Context{Vars{}}
+	s := scopeStack{}
+	s.push()
+	return Context{s}
 }
 
-func (c *Context) Assign(k string, v interface{}) {
-	//TODO: multiple stack handling
-	c.scopes[][k] = v
+func (c *Context) Assign(k string, v interface{}) error {
+	scope, err := c.scopes.curr()
+	if err != nil {
+		return err
+	}
+	scope[k] = v
+	return nil
 }
 
-func (c *Context) Get(k string) interface{} {
-	return c.vars[k]
+func (c *Context) Get(k string) (interface{}, error) {
+	scope, err := c.scopes.curr()
+	if err != nil {
+		return nil, err
+	}
+
+	return scope[k], nil
 }
 
 func interfaceToExpression(v interface{}) Expression {
@@ -45,16 +59,45 @@ func (c *Context) FindVariable(e Expression) (Expression, error) {
 		return nil, fmt.Errorf("DUNNO WHAT TO DO WITH %v OMG", e)
 	}
 
-	if value, ok := c.vars[key]; ok {
+	scope, err := c.scopes.curr()
+	if err != nil {
+		return nil, err
+	}
+
+	if value, ok := scope[key]; ok {
 		// XXX: assumes flat variable structure. wrong
 		return interfaceToExpression(value), nil
 	}
 
 	return nil, ErrNotFound(key)
-	// XXX: this doesn't handle scoping, everything is global for now :yay:
 }
 
 func (c *Context) lookupAndEvaluate() {
 }
 
+type scopeStack []Vars
 
+// Adds a new scope to the scopeStack
+func (s *scopeStack) push() {
+	*s = append(*s, Vars{})
+}
+
+// Removes scope from the scopeStack
+func (s *scopeStack) pop() error {
+	l := len(*s)
+	if l < 1 {
+		return errors.New(`No scopes to pop`)
+	}
+
+	*s = (*s)[:l-1]
+	return nil
+}
+
+func (s *scopeStack) curr() (Vars, error) {
+	l := len(*s)
+	if l < 1 {
+		return nil, errors.New(`No scopes to pop`)
+	}
+
+	return (*s)[l-1], nil
+}

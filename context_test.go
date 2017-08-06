@@ -10,26 +10,38 @@ func TestVariables(t *testing.T) {
 	ctx := newContext()
 
 	ctx.Assign("string", "string")
-	v := ctx.Get("string")
+	v, err := ctx.Get("string")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 	if v != "string" {
 		t.Fatal(fmt.Sprintf(`Assigned "string" to Context but Get returns %+v`, v))
 	}
 
 	ctx.Assign("num", 5)
-	v = ctx.Get("num")
+	v, err = ctx.Get("num")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 	if v != 5 {
 		t.Fatal(fmt.Sprintf(`Assigned 5 to Context but Get returns %+v`, v))
 	}
 
 	now := time.Now()
 	ctx.Assign("time", now)
-	v = ctx.Get("time")
+	v, err = ctx.Get("time")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 	if v != now {
 		t.Fatal(fmt.Sprintf(`Assigned a time.Time to Context but Get returns %+v`, v))
 	}
 
 	ctx.Assign("nil", nil)
-	v = ctx.Get("nil")
+	v, err = ctx.Get("nil")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 	if v != nil {
 		t.Fatal(fmt.Sprintf(`Assigned nil to Context but Get returns %+v`, v))
 	}
@@ -37,8 +49,56 @@ func TestVariables(t *testing.T) {
 
 func TestVariablesNotExisting(t *testing.T) {
 	ctx := newContext()
-	v := ctx.Get("wat")
+	v, err := ctx.Get("wat")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 	if v != nil {
 		t.Fatal(`Non-existent variable fetched from Context was not nil`)
+	}
+}
+
+//func TestScoping(t *testing.T) {
+//ctx := newContext()
+
+//ctx.push()
+//err := ctx.pop()
+
+//if err != nil {
+//t.Fatal(`Popping existing scope from Context failed`)
+//}
+
+//err = ctx.pop()
+//if err == nil {
+//t.Fatal(`Popping scope from empty Context did not error`)
+//}
+//}
+
+// scopeStack tests
+
+func TestScopeStack(t *testing.T) {
+	s := scopeStack{}
+
+	vars, err := s.curr()
+	if err == nil {
+		t.Fatal(`empty scopeStack did not throw error on curr()`)
+	}
+
+	if vars != nil {
+		t.Fatal(`empty scopeStack returned a Var`)
+	}
+
+	s.push()
+
+	vars, err = s.curr()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	if vars == nil {
+		t.Fatal(`nil Var returned from scopeStack`)
+	}
+
+	if len(s) != 1 {
+		t.Fatal(`unexpected scopeStack length`)
 	}
 }
