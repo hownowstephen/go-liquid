@@ -53,8 +53,8 @@ func TestVariablesNotExisting(t *testing.T) {
 	ctx.scopes.push()
 
 	v, err := ctx.Get("wat")
-	if err != nil {
-		t.Fatal(err.Error())
+	if err != ErrVarNotFound {
+		t.Fatal(`ErrVarNotFound not returned after calling Context.Get() with a non-existant variable`)
 	}
 	if v != nil {
 		t.Fatal(`Non-existent variable fetched from Context was not nil`)
@@ -133,8 +133,8 @@ func TestAddItemInInnerScope(t *testing.T) {
 	ctx.scopes.pop()
 
 	v, err = ctx.Get("test")
-	if err != nil {
-		t.Fatal(err.Error())
+	if err != ErrVarNotFound {
+		t.Fatal(fmt.Sprintf(`ErrorVarNotFound not thrown after popping scope that contained it: %v`, err.Error()))
 	}
 	if v != nil {
 		t.Fatal(fmt.Sprintf(`Got %+v from scope higher scope than it was defined in!`, v))

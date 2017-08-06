@@ -5,7 +5,10 @@ import (
 	"fmt"
 )
 
-var ErrNoScope = errors.New(`No scopes to pop`)
+var (
+	ErrNoScope     = errors.New(`no scopes to pop`)
+	ErrVarNotFound = errors.New(`variable not found`)
+)
 
 type Context struct {
 	scopes scopeStack
@@ -30,15 +33,12 @@ func (c *Context) Get(k string) (interface{}, error) {
 		return nil, ErrNoScope
 	}
 
-	var val interface{}
 	for i := len(c.scopes) - 1; i >= 0; i-- {
-		scope := c.scopes[i]
-		val = scope[k]
-		if val != nil {
-			break
+		if val, ok := c.scopes[i][k]; ok {
+			return val, nil
 		}
 	}
-	return val, nil
+	return nil, ErrVarNotFound
 }
 
 func interfaceToExpression(v interface{}) Expression {
@@ -67,17 +67,15 @@ func (c *Context) FindVariable(e Expression) (Expression, error) {
 		return nil, fmt.Errorf("DUNNO WHAT TO DO WITH %v OMG", e)
 	}
 
-	scope, err := c.scopes.curr()
+	value, err := c.Get(key)
 	if err != nil {
+		if err == ErrVarNotFound {
+			return nil, ErrNotFound(key)
+		}
 		return nil, err
 	}
 
-	if value, ok := scope[key]; ok {
-		// XXX: assumes flat variable structure. wrong
-		return interfaceToExpression(value), nil
-	}
-
-	return nil, ErrNotFound(key)
+	return interfaceToExpression(value), nil
 }
 
 func (c *Context) lookupAndEvaluate() {
