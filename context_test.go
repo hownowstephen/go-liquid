@@ -80,6 +80,39 @@ func TestHyphenatedVariable(t *testing.T) {
 	}
 }
 
+// Copied the name from the ruby implementation but it's badly named.
+// This actually tests if you can _access_ a variable set in a higher scope.
+func TestAddItemInOuterScope(t *testing.T) {
+	ctx := newContext()
+	ctx.scopes.push()
+
+	err := ctx.Assign("test", "test")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	ctx.scopes.push()
+
+	v, err := ctx.Get("test")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	if v != "test" {
+		t.Fatal(fmt.Sprintf(`Expected "test" but got %+v when looking up variable defined in higher scope"`, v))
+	}
+
+	ctx.scopes.pop()
+	v, err = ctx.Get("test")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	if v != "test" {
+		t.Fatal(fmt.Sprintf(`Expected "test" but got %+v when looking up variable`, v))
+	}
+
+}
+
 //scopeStack tests
 
 func TestScopeStack(t *testing.T) {

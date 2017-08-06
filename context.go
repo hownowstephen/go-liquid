@@ -24,12 +24,19 @@ func (c *Context) Assign(k string, v interface{}) error {
 }
 
 func (c *Context) Get(k string) (interface{}, error) {
-	scope, err := c.scopes.curr()
-	if err != nil {
-		return nil, err
+	if len(c.scopes) < 1 {
+		return nil, errors.New(`No scopes to pop`)
 	}
 
-	return scope[k], nil
+	var val interface{}
+	for i := len(c.scopes) - 1; i >= 0; i-- {
+		scope := c.scopes[i]
+		val = scope[k]
+		if val != nil {
+			break
+		}
+	}
+	return val, nil
 }
 
 func interfaceToExpression(v interface{}) Expression {
