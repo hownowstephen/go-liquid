@@ -61,6 +61,25 @@ func TestVariablesNotExisting(t *testing.T) {
 	}
 }
 
+func TestHyphenatedVariable(t *testing.T) {
+	ctx := newContext()
+	ctx.scopes.push()
+
+	err := ctx.Assign("oh-my", "godz")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	v, err := ctx.Get("oh-my")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	if v != "godz" {
+		t.Fatal(fmt.Sprintf(`expected "godz", got %+v`, v))
+	}
+}
+
 //scopeStack tests
 
 func TestScopeStack(t *testing.T) {
