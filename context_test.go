@@ -8,6 +8,7 @@ import (
 
 func TestVariables(t *testing.T) {
 	ctx := newContext()
+	ctx.scopes.push()
 
 	ctx.Assign("string", "string")
 	v, err := ctx.Get("string")
@@ -49,6 +50,8 @@ func TestVariables(t *testing.T) {
 
 func TestVariablesNotExisting(t *testing.T) {
 	ctx := newContext()
+	ctx.scopes.push()
+
 	v, err := ctx.Get("wat")
 	if err != nil {
 		t.Fatal(err.Error())
@@ -58,23 +61,7 @@ func TestVariablesNotExisting(t *testing.T) {
 	}
 }
 
-//func TestScoping(t *testing.T) {
-//ctx := newContext()
-
-//ctx.push()
-//err := ctx.pop()
-
-//if err != nil {
-//t.Fatal(`Popping existing scope from Context failed`)
-//}
-
-//err = ctx.pop()
-//if err == nil {
-//t.Fatal(`Popping scope from empty Context did not error`)
-//}
-//}
-
-// scopeStack tests
+//scopeStack tests
 
 func TestScopeStack(t *testing.T) {
 	s := scopeStack{}

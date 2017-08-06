@@ -11,7 +11,6 @@ type Context struct {
 
 func newContext() Context {
 	s := scopeStack{}
-	s.push()
 	return Context{s}
 }
 
