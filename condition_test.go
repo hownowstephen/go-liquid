@@ -124,8 +124,8 @@ func TestComparisonOfIntAndString(t *testing.T) {
 
 func TestContainsWorksOnArrays(t *testing.T) {
 	ctx := Context{
-		vars: map[string]interface{}{
-			"array": []interface{}{1, 2, 3, 4, 5},
+		scopes: scopeStack{
+			Vars{"array": []interface{}{1, 2, 3, 4, 5}},
 		},
 	}
 
