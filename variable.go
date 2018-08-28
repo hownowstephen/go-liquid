@@ -17,8 +17,8 @@ type Vars map[string]interface{}
 // Variable is a single liquid variable expression
 // and any associated filters
 type Variable struct {
-	name    Expression
-	filters []Filter
+	Name    Expression
+	Filters []Filter
 	markup  string
 }
 
@@ -31,7 +31,7 @@ func (v *Variable) Blank() bool {
 }
 
 func (v *Variable) String() string {
-	return fmt.Sprintf("Liquid::Variable %v filters: %v markup: %v", v.name.Name(), v.filters, v.markup)
+	return fmt.Sprintf("Liquid::Variable %v filters: %v markup: %v", v.Name.Name(), v.Filters, v.markup)
 }
 
 // Filter is used to modify a Variable using the
@@ -112,8 +112,8 @@ func ParseStrict(markup string) (*Variable, error) {
 	}
 
 	return &Variable{
-		name:    name,
-		filters: filters,
+		Name:    name,
+		Filters: filters,
 		markup:  markup,
 	}, nil
 }

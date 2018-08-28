@@ -21,17 +21,17 @@ func checkVariable(t *testing.T, markup, wantName string, wantFilters []Filter, 
 			return v
 		}
 
-		if v.name.Name() != vl.Name() {
-			t.Errorf("%v lookup name mismatch, want: %v, got %v", markup, vl.name, v.name.Name())
+		if v.Name.Name() != vl.Name() {
+			t.Errorf("%v lookup name mismatch, want: %v, got %v", markup, vl.name, v.Name.Name())
 		}
 	}
 
-	if v.name.Name() != wantName {
-		t.Errorf("%v name mismatched, want: %v, got: %v", markup, wantName, v.name.Name())
+	if v.Name.Name() != wantName {
+		t.Errorf("%v name mismatched, want: %v, got: %v", markup, wantName, v.Name.Name())
 	}
 
-	if !reflect.DeepEqual(v.filters, wantFilters) {
-		t.Errorf("%v filters mismatched, want: %v, got: %v", markup, wantFilters, v.filters)
+	if !reflect.DeepEqual(v.Filters, wantFilters) {
+		t.Errorf("%v filters mismatched, want: %v, got: %v", markup, wantFilters, v.Filters)
 	}
 
 	return v
@@ -117,15 +117,15 @@ func TestStringQuoting(t *testing.T) {
 
 func TestIntegerVariable(t *testing.T) {
 	v := checkVariable(t, `1000`, `1000`, nil, true)
-	if v != nil && v.name != integerExpr(1000) {
-		t.Errorf("Expected integer, got %v", reflect.TypeOf(v.name))
+	if v != nil && v.Name != integerExpr(1000) {
+		t.Errorf("Expected integer, got %v", reflect.TypeOf(v.Name))
 	}
 }
 
 func TestFloatVariable(t *testing.T) {
 	v := checkVariable(t, `1000.01`, `1000.01`, nil, false)
-	if v != nil && v.name != floatExpr(1000.01) {
-		t.Errorf("Expected float, got %v", reflect.TypeOf(v.name))
+	if v != nil && v.Name != floatExpr(1000.01) {
+		t.Errorf("Expected float, got %v", reflect.TypeOf(v.Name))
 	}
 }
 
@@ -137,23 +137,23 @@ func TestDashes(t *testing.T) {
 			t.Errorf("%v couldn't create variable: %v", expr, err)
 			continue
 		}
-		if v.name.Name() != vl.Name() {
-			t.Errorf(`mismatch! Lookup: "%v", Variable: "%v"`, vl.Name(), v.name.Name())
+		if v.Name.Name() != vl.Name() {
+			t.Errorf(`mismatch! Lookup: "%v", Variable: "%v"`, vl.Name(), v.Name.Name())
 		}
 	}
 
 	for _, badExpr := range []string{"foo - bar", "-foo", "2foo"} {
 		v, err := CreateVariable(badExpr)
 		if err == nil {
-			t.Errorf(`expression "%v" should not be a valid variable, got: %v`, badExpr, v.name)
+			t.Errorf(`expression "%v" should not be a valid variable, got: %v`, badExpr, v.Name)
 		}
 	}
 }
 
 func TestStringWithSpecialChars(t *testing.T) {
 	v := checkVariable(t, `'hello! $!@.;"ddasd" '`, `hello! $!@.;"ddasd" `, nil, false)
-	if v != nil && v.name != stringExpr(`hello! $!@.;"ddasd" `) {
-		t.Errorf("wrong type, want stringExpr, got: %v", reflect.TypeOf(v.name))
+	if v != nil && v.Name != stringExpr(`hello! $!@.;"ddasd" `) {
+		t.Errorf("wrong type, want stringExpr, got: %v", reflect.TypeOf(v.Name))
 	}
 }
 
