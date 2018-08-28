@@ -45,15 +45,15 @@ func (n stringNode) Blank() bool {
 
 // Tag implements a parsing interface for generating liquid Nodes
 type Tag interface {
-	Parse(name, markup string, tokenizer *Tokenizer, ctx *parseContext) Node
+	Parse(name, markup string, tokenizer *Tokenizer, ctx *ParseContext) Node
 }
 
 // An example tag
 type commentTag struct{}
 
-func (t *commentTag) Parse(name, markup string, tokenizer *Tokenizer, ctx *parseContext) Node {
+func (t *commentTag) Parse(name, markup string, tokenizer *Tokenizer, ctx *ParseContext) Node {
 
-	subctx := &parseContext{
+	subctx := &ParseContext{
 		line: ctx.line,
 		end:  fmt.Sprintf("end%v", name),
 	}
@@ -82,16 +82,16 @@ var RegisteredTags = map[string]Tag{
 	"comment": &commentTag{},
 }
 
-type parseContext struct {
+type ParseContext struct {
 	line int
 	end  string
 }
 
-func (c *parseContext) String() string {
+func (c *ParseContext) String() string {
 	return fmt.Sprintf("Line: %v, End: %v", c.line, c.end)
 }
 
-func tokensToNodeList(tokenizer *Tokenizer, ctx *parseContext) ([]Node, error) {
+func tokensToNodeList(tokenizer *Tokenizer, ctx *ParseContext) ([]Node, error) {
 	var nodeList []Node
 
 	blank := true
@@ -152,7 +152,7 @@ func ParseTemplate(template string) (*Template, error) {
 
 	// tokenize the source
 	tokenizer := NewTokenizer(template)
-	ctx := &parseContext{line: 0}
+	ctx := &ParseContext{line: 0}
 	nodeList, err := tokensToNodeList(tokenizer, ctx)
 
 	return &Template{nodeList}, err
@@ -187,7 +187,7 @@ func (t *Template) Render(vars Vars) (string, error) {
 //       raise_missing_variable_terminator(token, parse_context)
 //     end
 
-func createVariable(token string, ctx *parseContext) (Node, error) {
+func createVariable(token string, ctx *ParseContext) (Node, error) {
 	parsed := contentOfVariableRegexp.FindStringSubmatch(token)
 
 	v, err := CreateVariable(parsed[1])
