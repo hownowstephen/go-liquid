@@ -1,6 +1,7 @@
 package liquid
 
 import (
+	"fmt"
 	"regexp"
 )
 
@@ -77,7 +78,8 @@ func ParseVariableLookup(markup string) *VariableLookup {
 	lookups := variableParserRegexp.FindAllString(markup, -1)
 
 	if len(lookups) == 0 {
-		panic("OHNO WAT DO NOW")
+		fmt.Println("No lookups found, returning nil")
+		return nil
 	}
 
 	name = literalExpr(lookups[0])
