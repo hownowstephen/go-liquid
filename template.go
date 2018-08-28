@@ -1,6 +1,7 @@
 package liquid
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -45,13 +46,13 @@ func (n stringNode) Blank() bool {
 
 // Tag implements a parsing interface for generating liquid Nodes
 type Tag interface {
-	Parse(name, markup string, tokenizer *Tokenizer, ctx *ParseContext) Node
+	Parse(name, markup string, tokenizer *Tokenizer, ctx *ParseContext) (Node, error)
 }
 
 // An example tag
 type commentTag struct{}
 
-func (t *commentTag) Parse(name, markup string, tokenizer *Tokenizer, ctx *ParseContext) Node {
+func (t *commentTag) Parse(name, markup string, tokenizer *Tokenizer, ctx *ParseContext) (Node, error) {
 
 	subctx := &ParseContext{
 		line: ctx.line,
@@ -68,7 +69,48 @@ func (t *commentTag) Parse(name, markup string, tokenizer *Tokenizer, ctx *Parse
 	return blockNode{
 		tag:   name,
 		Nodes: nodelist,
+	}, nil
+}
+
+type elseTag struct {
+	Params bool
+}
+
+func (t *elseTag) Parse(name, markup string, tokenizer *Tokenizer, ctx *ParseContext) (Node, error) {
+	if !t.Params {
+		if strings.Replace(markup, " ", "", -1) != "{%else%}" {
+			return nil, errors.New("else doesn't accept params")
+		}
 	}
+	return elseNode{tag: name, markup: markup}, nil
+}
+
+// Conditional tag
+type ifTag struct{}
+
+func (t *ifTag) Parse(name, markup string, tokenizer *Tokenizer, ctx *ParseContext) (Node, error) {
+
+	subctx := &ParseContext{
+		line: ctx.line,
+		end:  fmt.Sprintf("end%v", name),
+		temporaryTags: map[string]Tag{
+			"elsif": &elseTag{Params: true},
+			"else":  &elseTag{},
+		},
+	}
+
+	nodelist, err := tokensToNodeList(tokenizer, subctx)
+	if err != nil {
+		panic(err)
+	}
+
+	ctx.line = subctx.line
+
+	return blockNode{
+		tag:    name,
+		markup: markup,
+		Nodes:  nodelist,
+	}, nil
 }
 
 // RegisterTag registers a new tag (big surprise)
@@ -80,11 +122,13 @@ func RegisterTag(name string, tag Tag) {
 // RegisteredTags are all known tags
 var RegisteredTags = map[string]Tag{
 	"comment": &commentTag{},
+	"if":      &ifTag{},
 }
 
 type ParseContext struct {
-	line int
-	end  string
+	line          int
+	end           string
+	temporaryTags map[string]Tag
 }
 
 func (c *ParseContext) String() string {
@@ -118,7 +162,17 @@ func tokensToNodeList(tokenizer *Tokenizer, ctx *ParseContext) ([]Node, error) {
 					}
 					return nodeList, err
 				} else if tag, ok := RegisteredTags[tagName]; ok {
-					newTag := tag.Parse(tagName, markup, tokenizer, ctx)
+					newTag, err := tag.Parse(tagName, markup, tokenizer, ctx)
+					if err != nil {
+						return nil, err
+					}
+					blank = blank && newTag.Blank()
+					nodeList = append(nodeList, newTag)
+				} else if tag, ok := ctx.temporaryTags[tagName]; ok {
+					newTag, err := tag.Parse(tagName, markup, tokenizer, ctx)
+					if err != nil {
+						return nil, err
+					}
 					blank = blank && newTag.Blank()
 					nodeList = append(nodeList, newTag)
 				} else if tagName == "else" || tagName == "end" {
@@ -198,8 +252,9 @@ func createVariable(token string, ctx *ParseContext) (Node, error) {
 }
 
 type blockNode struct {
-	tag   string
-	Nodes []Node
+	tag    string
+	markup string
+	Nodes  []Node
 }
 
 func (n blockNode) Render(v Vars) (string, error) {
@@ -208,6 +263,21 @@ func (n blockNode) Render(v Vars) (string, error) {
 
 func (n blockNode) Blank() bool {
 	return len(n.Nodes) == 0
+}
+
+// XXX: This is just to make it possible to parse if/else blocks. Clearly this structure doesn't actually work
+type elseNode struct {
+	tag    string
+	markup string
+	params []string
+}
+
+func (n elseNode) Render(v Vars) (string, error) {
+	panic("unimplemented")
+}
+
+func (n elseNode) Blank() bool {
+	return true
 }
 
 //     def raise_missing_tag_terminator(token, parse_context)

@@ -86,6 +86,22 @@ func TestVariableLookup(t *testing.T) {
 	})
 }
 
+func TestParseIfBlock(t *testing.T) {
+	checkTemplate(t, `{% if x > 100 %}Huge{% elsif x > 10 %}Big{% else %}Normal{% endif %}`, []Node{
+		blockNode{
+			tag:    "if",
+			markup: "{% if x > 100 %}",
+			Nodes: []Node{
+				stringNode("Huge"),
+				elseNode{tag: "elsif", markup: "{% elsif x > 10 %}"},
+				stringNode("Big"),
+				elseNode{tag: "else", markup: "{% else %}"},
+				stringNode("Normal"),
+			},
+		},
+	})
+}
+
 func testVariableNode(v string) Node {
 	variable, err := CreateVariable(v)
 	if err != nil {
