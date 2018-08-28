@@ -245,6 +245,10 @@ func (t *Template) Render(vars Vars) (string, error) {
 func createVariable(token string, ctx *ParseContext) (Node, error) {
 	parsed := contentOfVariableRegexp.FindStringSubmatch(token)
 
+	if len(parsed) != 2 {
+		return nil, errors.New("no variable content")
+	}
+
 	v, err := CreateVariable(parsed[1])
 	if err != nil {
 		return nil, err
