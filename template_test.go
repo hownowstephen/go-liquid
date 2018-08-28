@@ -58,9 +58,10 @@ func TestVariableManyEmbeddedFragments(t *testing.T) {
 func TestWithBlock(t *testing.T) {
 	checkTemplate(t, `  {% comment %} {% endcomment %} `, []Node{
 		stringNode("  "),
-		blockNode{
-			tag:   "comment",
-			Nodes: []Node{stringNode(" ")},
+		BlockNode{
+			Tag:    "comment",
+			markup: "{% comment %}",
+			Nodes:  []Node{stringNode(" ")},
 		},
 		stringNode(" "),
 	})
@@ -69,9 +70,10 @@ func TestWithBlock(t *testing.T) {
 func TestWithCustomTag(t *testing.T) {
 	RegisterTag("testtag", &commentTag{})
 	checkTemplate(t, `{% testtag %} {% endtesttag %}`, []Node{
-		blockNode{
-			tag:   "testtag",
-			Nodes: []Node{stringNode(" ")},
+		BlockNode{
+			Tag:    "testtag",
+			markup: "{% testtag %}",
+			Nodes:  []Node{stringNode(" ")},
 		},
 	})
 }
@@ -88,8 +90,8 @@ func TestVariableLookup(t *testing.T) {
 
 func TestParseIfBlock(t *testing.T) {
 	checkTemplate(t, `{% if x > 100 %}Huge{% elsif x > 10 %}Big{% else %}Normal{% endif %}`, []Node{
-		blockNode{
-			tag:    "if",
+		BlockNode{
+			Tag:    "if",
 			markup: "{% if x > 100 %}",
 			Nodes: []Node{
 				stringNode("Huge"),

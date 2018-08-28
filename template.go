@@ -66,9 +66,10 @@ func (t *commentTag) Parse(name, markup string, tokenizer *Tokenizer, ctx *Parse
 
 	ctx.line = subctx.line
 
-	return blockNode{
-		tag:   name,
-		Nodes: nodelist,
+	return BlockNode{
+		Tag:    name,
+		markup: markup,
+		Nodes:  nodelist,
 	}, nil
 }
 
@@ -106,10 +107,10 @@ func (t *ifTag) Parse(name, markup string, tokenizer *Tokenizer, ctx *ParseConte
 
 	ctx.line = subctx.line
 
-	return blockNode{
-		tag:    name,
-		markup: markup,
+	return BlockNode{
+		Tag:    name,
 		Nodes:  nodelist,
+		markup: markup,
 	}, nil
 }
 
@@ -251,17 +252,17 @@ func createVariable(token string, ctx *ParseContext) (Node, error) {
 	return v, nil
 }
 
-type blockNode struct {
-	tag    string
+type BlockNode struct {
+	Tag    string
 	markup string
 	Nodes  []Node
 }
 
-func (n blockNode) Render(v Vars) (string, error) {
+func (n BlockNode) Render(v Vars) (string, error) {
 	panic("unimplemented")
 }
 
-func (n blockNode) Blank() bool {
+func (n BlockNode) Blank() bool {
 	return len(n.Nodes) == 0
 }
 
