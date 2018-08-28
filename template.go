@@ -131,7 +131,11 @@ func tokensToNodeList(tokenizer *Tokenizer, ctx *parseContext) ([]Node, error) {
 			}
 
 		case strings.HasPrefix(token, varStartToken):
-			nodeList = append(nodeList, createVariable(token, ctx))
+			myVar, err := createVariable(token, ctx)
+			if err != nil {
+				return nil, err
+			}
+			nodeList = append(nodeList, myVar)
 			blank = false
 		default:
 			nodeList = append(nodeList, stringNode(token))
@@ -183,14 +187,14 @@ func (t *Template) Render(vars Vars) (string, error) {
 //       raise_missing_variable_terminator(token, parse_context)
 //     end
 
-func createVariable(token string, ctx *parseContext) Node {
+func createVariable(token string, ctx *parseContext) (Node, error) {
 	parsed := contentOfVariableRegexp.FindStringSubmatch(token)
 
 	v, err := CreateVariable(parsed[1])
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return v
+	return v, nil
 }
 
 type blockNode struct {
