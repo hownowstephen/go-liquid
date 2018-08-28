@@ -1,6 +1,8 @@
 package liquid
 
-import "regexp"
+import (
+	"regexp"
+)
 
 var (
 	squareBracketedRegexp = regexp.MustCompile(`(?sm)\A\[(.*)\]\z`)
@@ -80,8 +82,8 @@ func ParseVariableLookup(markup string) *VariableLookup {
 
 	name = literalExpr(lookups[0])
 
-	if squareBracketedRegexp.MatchString(lookups[0]) {
-		name = ParseExpression(lookups[0])
+	if m := squareBracketedRegexp.FindStringSubmatch(lookups[0]); len(m) == 2 {
+		name = ParseExpression(m[1])
 	}
 
 	if len(lookups) == 1 {
@@ -92,8 +94,8 @@ func ParseVariableLookup(markup string) *VariableLookup {
 	lookupExpressions := make([]Expression, len(lookups)-1)
 
 	for i, lookup := range lookups[1:] {
-		if squareBracketedRegexp.MatchString(lookup) {
-			lookupExpressions[i] = ParseExpression(lookup)
+		if m := squareBracketedRegexp.FindStringSubmatch(lookups[0]); len(m) == 2 {
+			name = ParseExpression(m[1])
 		} else {
 			lookupExpressions[i] = literalExpr(lookup)
 		}

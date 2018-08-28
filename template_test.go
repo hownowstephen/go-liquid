@@ -76,6 +76,16 @@ func TestWithCustomTag(t *testing.T) {
 	})
 }
 
+func TestVariableLookup(t *testing.T) {
+	checkTemplate(t, `{{a.b.first}}<br>{{c.d[0]}}<br>{{e.f | first}}`, []Node{
+		testVariableNode("a.b.first"),
+		stringNode("<br>"),
+		testVariableNode("c.d[0]"),
+		stringNode("<br>"),
+		testVariableNode("e.f | first"),
+	})
+}
+
 func testVariableNode(v string) Node {
 	variable, err := CreateVariable(v)
 	if err != nil {

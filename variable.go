@@ -30,12 +30,20 @@ func (v *Variable) Blank() bool {
 	panic("unimplemented")
 }
 
+func (v *Variable) String() string {
+	return fmt.Sprintf("Liquid::Variable %v filters: %v markup: %v", v.name.Name(), v.filters, v.markup)
+}
+
 // Filter is used to modify a Variable using the
 // liquid pipe syntax "x | f1 | f2"
 type Filter struct {
 	name   string
 	args   []Expression
 	kwargs map[string]Expression
+}
+
+func (f Filter) String() string {
+	return fmt.Sprintf("Liquid::Filter %v", f.name)
 }
 
 // CreateVariable performs a parse of the supplied markup
