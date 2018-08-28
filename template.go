@@ -20,9 +20,9 @@ const (
 )
 
 // Template is a parsed liquid string containing a list
-// of nodes that can be used to render an output
+// of Nodes that can be used to render an output
 type Template struct {
-	nodes []Node
+	Nodes []Node
 }
 
 // Node must be implemented by all parts of a template, and
@@ -43,7 +43,7 @@ func (n stringNode) Blank() bool {
 	return n == ""
 }
 
-// Tag implements a parsing interface for generating liquid nodes
+// Tag implements a parsing interface for generating liquid Nodes
 type Tag interface {
 	Parse(name, markup string, tokenizer *Tokenizer, ctx *parseContext) Node
 }
@@ -67,7 +67,7 @@ func (t *commentTag) Parse(name, markup string, tokenizer *Tokenizer, ctx *parse
 
 	return blockNode{
 		tag:   name,
-		nodes: nodelist,
+		Nodes: nodelist,
 	}
 }
 
@@ -156,12 +156,12 @@ func ParseTemplate(template string) (*Template, error) {
 
 // Render the template with the supplied variables
 func (t *Template) Render(vars Vars) (string, error) {
-	if len(t.nodes) == 0 || t.nodes[0].Blank() {
+	if len(t.Nodes) == 0 || t.Nodes[0].Blank() {
 		return "", nil
 	}
 
-	// Obviously we need to actually render the rest of the nodes.
-	return t.nodes[0].Render(vars)
+	// Obviously we need to actually render the rest of the Nodes.
+	return t.Nodes[0].Render(vars)
 }
 
 //     def render_node(node, context)
@@ -195,7 +195,7 @@ func createVariable(token string, ctx *parseContext) Node {
 
 type blockNode struct {
 	tag   string
-	nodes []Node
+	Nodes []Node
 }
 
 func (n blockNode) Render(v Vars) (string, error) {
@@ -203,7 +203,7 @@ func (n blockNode) Render(v Vars) (string, error) {
 }
 
 func (n blockNode) Blank() bool {
-	return len(n.nodes) == 0
+	return len(n.Nodes) == 0
 }
 
 //     def raise_missing_tag_terminator(token, parse_context)

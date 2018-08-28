@@ -144,7 +144,6 @@ type rangeExpr struct {
 
 func (e rangeExpr) Evaluate(c Context) Expression {
 	panic("nope")
-	return e
 }
 
 func (e rangeExpr) Name() string {

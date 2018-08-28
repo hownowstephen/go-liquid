@@ -1,10 +1,10 @@
 package liquid
 
 import (
-	"errors"
 	"fmt"
 )
 
+// ErrSyntax acts as a generic liquid syntax error
 type ErrSyntax string
 
 func (e ErrSyntax) Error() string {
@@ -15,10 +15,12 @@ type liquidContext interface {
 	String() string
 }
 
+// LiquidError prettifies an error with a liquid Context
 func LiquidError(err string, context liquidContext) error {
-	return errors.New(fmt.Sprintf("%v - %v", err, context))
+	return fmt.Errorf("%v - %v", err, context)
 }
 
+// ErrNotFound wraps a missing variable error
 func ErrNotFound(variable string) error {
 	return LiquidError(fmt.Sprintf("Liquid::ErrorNotFound %v", variable), nil)
 }

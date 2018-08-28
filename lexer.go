@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-type tk struct {
+type Token struct {
 	name  string
 	value string
 }
@@ -37,7 +37,7 @@ const (
 )
 
 // EndOfString is a
-var EndOfString = tk{tEndOfString, ""}
+var EndOfString = Token{tEndOfString, ""}
 
 var specialTokens = map[uint8]string{
 	'|': tPipe,
@@ -70,10 +70,10 @@ var sequenceTypes = []sequence{
 var whitespace = regexp.MustCompile(`\s`)
 
 // Lexer converts liquid-y strings into lexographic tokens
-func Lexer(s string) ([]tk, error) {
+func Lexer(s string) ([]Token, error) {
 
 	s = strings.TrimSpace(s)
-	var tokens []tk
+	var tokens []Token
 
 TokenLoop:
 	for i := 0; i < len(s); i++ {
@@ -85,14 +85,14 @@ TokenLoop:
 
 		for _, seq := range sequenceTypes {
 			if match := seq.regex.FindString(s[i:]); match != "" {
-				tokens = append(tokens, tk{seq.name, match})
+				tokens = append(tokens, Token{seq.name, match})
 				i += len(match) - 1
 				continue TokenLoop
 			}
 		}
 
 		if name, ok := specialTokens[t]; ok {
-			tokens = append(tokens, tk{name, string(t)})
+			tokens = append(tokens, Token{name, string(t)})
 			continue
 		}
 

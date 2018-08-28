@@ -52,7 +52,7 @@ func interfaceToExpression(v interface{}) Expression {
 	case []interface{}:
 		return arrayExpr(v.([]interface{}))
 	}
-	panic(fmt.Sprintf("DONT UNDERSTAND %v"))
+	panic(fmt.Sprintf("DONT UNDERSTAND %v", v))
 }
 
 func (c *Context) FindVariable(e Expression) (Expression, error) {

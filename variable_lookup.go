@@ -61,7 +61,6 @@ func (v *VariableLookup) Evaluate(c Context) Expression {
 
 	//       object
 	// end
-	return nil
 }
 
 func (v *VariableLookup) Name() string {

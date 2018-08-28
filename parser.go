@@ -14,7 +14,7 @@ var (
 
 // Parser objects parse the contents of liquid tags
 type Parser struct {
-	tokens []tk
+	tokens []Token
 	index  uint64
 }
 

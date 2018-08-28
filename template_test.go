@@ -10,8 +10,8 @@ func checkTemplate(t *testing.T, tpl string, want []Node) {
 	if err != nil {
 		t.Error(err)
 	}
-	if !reflect.DeepEqual(template.nodes, want) {
-		t.Errorf("Template parsed wrong, want: %v, got: %v", want, template.nodes)
+	if !reflect.DeepEqual(template.Nodes, want) {
+		t.Errorf("Template parsed wrong, want: %v, got: %v", want, template.Nodes)
 	}
 }
 
@@ -60,7 +60,7 @@ func TestWithBlock(t *testing.T) {
 		stringNode("  "),
 		blockNode{
 			tag:   "comment",
-			nodes: []Node{stringNode(" ")},
+			Nodes: []Node{stringNode(" ")},
 		},
 		stringNode(" "),
 	})
@@ -71,7 +71,7 @@ func TestWithCustomTag(t *testing.T) {
 	checkTemplate(t, `{% testtag %} {% endtesttag %}`, []Node{
 		blockNode{
 			tag:   "testtag",
-			nodes: []Node{stringNode(" ")},
+			Nodes: []Node{stringNode(" ")},
 		},
 	})
 }

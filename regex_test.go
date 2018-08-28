@@ -47,7 +47,7 @@ func TestQuotedWordsInTheMiddle(t *testing.T) {
 	testRegex(t, quotedFragmentRegexp, `arg1 arg2 "arg 3" arg4   `, []string{`arg1`, `arg2`, `"arg 3"`, `arg4`})
 }
 
-func TestvariableParserRegexp(t *testing.T) {
+func TestVariableParserRegexp(t *testing.T) {
 	testRegex(t, variableParserRegexp, `var`, []string{`var`})
 	testRegex(t, variableParserRegexp, `var.method`, []string{`var`, `method`})
 	testRegex(t, variableParserRegexp, `var[method]`, []string{`var`, `[method]`})

@@ -6,12 +6,14 @@ import (
 	"strings"
 )
 
+// ErrInvalidOperator wraps an invalid variable operator error
 type ErrInvalidOperator string
 
 func (e ErrInvalidOperator) Error() string {
 	return fmt.Sprintf("Liquid::InvalidOperator: %v", string(e))
 }
 
+// ErrBadArgument wraps an argument list error
 type ErrBadArgument struct {
 	args []Expression
 }
