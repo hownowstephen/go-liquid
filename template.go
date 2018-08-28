@@ -61,7 +61,7 @@ func (t *commentTag) Parse(name, markup string, tokenizer *Tokenizer, ctx *Parse
 
 	nodelist, err := tokensToNodeList(tokenizer, subctx)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	ctx.line = subctx.line
@@ -101,7 +101,7 @@ func (t *ifTag) Parse(name, markup string, tokenizer *Tokenizer, ctx *ParseConte
 
 	nodelist, err := tokensToNodeList(tokenizer, subctx)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	ctx.line = subctx.line
